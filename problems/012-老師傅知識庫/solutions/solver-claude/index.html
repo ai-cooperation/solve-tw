@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>老師傅知識庫</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, 'Noto Sans TC', sans-serif; background: #f5f5f0; color: #333; font-size: 18px; }
+
+.header { background: #2c3e50; color: #fff; padding: 14px 16px; text-align: center; }
+.header h1 { font-size: 22px; letter-spacing: 1px; }
+.header small { color: #95a5a6; font-size: 13px; }
+
+/* Two big mode buttons */
+.mode-switch { display: flex; background: #fff; border-bottom: 2px solid #eee; }
+.mode-btn { flex: 1; padding: 16px; text-align: center; cursor: pointer; font-size: 18px; font-weight: bold; border: none; background: #fff; transition: all .2s; border-bottom: 4px solid transparent; }
+.mode-btn.active { background: #fdf6e3; border-bottom-color: #e67e22; }
+.mode-btn:first-child { border-right: 1px solid #eee; }
+.mode-icon { font-size: 28px; display: block; margin-bottom: 4px; }
+
+.content { max-width: 640px; margin: 0 auto; padding: 16px; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* Cards */
+.card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06); border-left: 4px solid #e67e22; }
+.card h3 { font-size: 18px; margin-bottom: 8px; }
+.card-meta { font-size: 13px; color: #888; margin-bottom: 8px; }
+.card-tag { display: inline-block; background: #fdf6e3; color: #e67e22; padding: 2px 10px; border-radius: 12px; font-size: 13px; margin-right: 6px; margin-bottom: 4px; }
+.card-section { margin-top: 10px; }
+.card-section strong { font-size: 14px; color: #666; }
+.card-section p { margin-top: 4px; line-height: 1.7; }
+
+/* Form */
+label { display: block; font-weight: bold; margin: 16px 0 6px; font-size: 16px; }
+input, textarea, select { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 18px; font-family: inherit; }
+textarea { min-height: 100px; resize: vertical; }
+input:focus, textarea:focus { outline: none; border-color: #e67e22; box-shadow: 0 0 0 3px rgba(230,126,34,.15); }
+.hint { font-size: 14px; color: #999; margin-top: 4px; }
+
+/* Big record button */
+.record-area { text-align: center; margin: 20px 0; }
+.record-btn { width: 120px; height: 120px; border-radius: 50%; border: 4px solid #e67e22; background: #fff; cursor: pointer; font-size: 16px; font-weight: bold; color: #e67e22; transition: all .2s; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto; }
+.record-btn:hover { background: #fdf6e3; }
+.record-btn.recording { background: #e74c3c; border-color: #c0392b; color: #fff; animation: pulse 1.5s infinite; }
+.record-btn .rec-icon { font-size: 36px; }
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+/* Buttons */
+.btn { display: block; width: 100%; padding: 16px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 16px; transition: all .2s; }
+.btn-primary { background: #e67e22; color: #fff; }
+.btn-primary:hover { background: #d35400; }
+.btn-secondary { background: #ecf0f1; color: #555; }
+.btn-sm { display: inline-block; width: auto; padding: 8px 16px; font-size: 14px; margin-top: 8px; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-row { display: flex; gap: 8px; margin-top: 12px; }
+.btn-row .btn { flex: 1; margin-top: 0; }
+
+/* Search */
+.search-box { position: relative; }
+.search-box input { padding-right: 50px; }
+.search-submit { position: absolute; right: 4px; top: 4px; bottom: 4px; width: 44px; border: none; background: #e67e22; color: #fff; border-radius: 6px; font-size: 20px; cursor: pointer; }
+
+/* Status */
+.status { padding: 10px 16px; border-radius: 8px; margin: 12px 0; font-size: 15px; }
+.status-ok { background: #e8f5e9; color: #2e7d32; }
+.status-warn { background: #fff8e1; color: #f57f17; }
+.status-err { background: #fce4ec; color: #c62828; }
+
+/* Loading */
+.loading { text-align: center; padding: 24px; color: #999; font-size: 16px; }
+.loading::after { content: ''; display: inline-block; width: 20px; height: 20px; border: 3px solid #ddd; border-top-color: #e67e22; border-radius: 50%; animation: spin .8s linear infinite; margin-left: 8px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Answer card */
+.answer-card { background: #fff; border: 2px solid #27ae60; border-radius: 12px; padding: 20px; margin-top: 16px; line-height: 1.8; font-size: 17px; }
+.answer-card h3 { color: #27ae60; margin-bottom: 12px; }
+
+/* Settings */
+.settings { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.settings summary { cursor: pointer; font-weight: bold; font-size: 16px; }
+
+/* Stats bar */
+.stats { display: flex; gap: 12px; margin-bottom: 16px; }
+.stat { flex: 1; background: #fff; border-radius: 8px; padding: 12px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.05); }
+.stat-num { font-size: 28px; font-weight: bold; color: #e67e22; }
+.stat-label { font-size: 12px; color: #999; }
+
+/* Empty state */
+.empty { text-align: center; padding: 40px 20px; color: #bbb; }
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+@media (max-width: 400px) { .mode-btn { font-size: 16px; padding: 12px 8px; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🔧 老師傅知識庫</h1>
+  <small>師傅用講的存，新人用問的找 ｜ cooperation.tw</small>
+</div>
+
+<div class="mode-switch">
+  <div class="mode-btn active" data-mode="ask"><span class="mode-icon">🔍</span>新人提問</div>
+  <div class="mode-btn" data-mode="record"><span class="mode-icon">🎤</span>師傅錄入</div>
+</div>
+
+<div class="content">
+
+<!-- ===== 新人提問 ===== -->
+<div class="panel active" id="panel-ask">
+  <div class="stats">
+    <div class="stat"><div class="stat-num" id="card-count">0</div><div class="stat-label">知識卡片</div></div>
+    <div class="stat"><div class="stat-num" id="category-count">0</div><div class="stat-label">主題類別</div></div>
+    <div class="stat"><div class="stat-num" id="master-count">0</div><div class="stat-label">位師傅</div></div>
+  </div>
+
+  <div class="search-box">
+    <input type="text" id="ask-input" placeholder="問問題，例：模具卡料怎麼處理？" autofocus>
+    <button class="search-submit" onclick="askQuestion()">→</button>
+  </div>
+  <div class="hint">可以用口語問，例如「射出機溫度怎麼調」「客戶 A 的產品要注意什麼」</div>
+
+  <div id="ask-output"></div>
+
+  <h3 style="margin-top:24px; margin-bottom:12px; font-size:16px; color:#888;">📚 所有知識卡片</h3>
+  <div id="card-list"></div>
+</div>
+
+<!-- ===== 師傅錄入 ===== -->
+<div class="panel" id="panel-record">
+  <details class="settings" open>
+    <summary>⚙️ 設定</summary>
+    <label>AI 服務</label>
+    <select id="ai-provider">
+      <option value="gemini">Google Gemini（免費）</option>
+      <option value="openai">OpenAI</option>
+    </select>
+    <label>API Key</label>
+    <input type="password" id="api-key" placeholder="貼上 API Key">
+    <div class="hint" style="color:#2e7d32">🔒 Key 只在記憶體中，關頁面即消失</div>
+    <button class="btn btn-secondary btn-sm" onclick="testKey()">測試連線</button>
+    <div id="key-status"></div>
+
+    <label>師傅姓名</label>
+    <input type="text" id="master-name" placeholder="例：陳師傅" value="">
+
+    <label>主題類別</label>
+    <select id="record-category">
+      <option>設備操作</option>
+      <option>品質異常</option>
+      <option>客戶需求</option>
+      <option>模具保養</option>
+      <option>安全注意</option>
+      <option>其他</option>
+    </select>
+  </details>
+
+  <div class="record-area">
+    <p style="margin-bottom:12px; color:#666;">按住按鈕講話，放開自動整理</p>
+    <button class="record-btn" id="rec-btn" onmousedown="startRec()" onmouseup="stopRec()" ontouchstart="startRec()" ontouchend="stopRec()">
+      <span class="rec-icon">🎤</span>
+      <span>按住講話</span>
+    </button>
+  </div>
+
+  <div id="rec-status"></div>
+
+  <div id="raw-speech" style="display:none">
+    <label>師傅原話（可修改）</label>
+    <textarea id="speech-text"></textarea>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="processToCard()">✨ AI 整理成知識卡片</button>
+      <button class="btn btn-secondary" onclick="clearRec()">清除</button>
+    </div>
+  </div>
+
+  <div id="card-preview"></div>
+</div>
+
+</div>
+
+<script>
+// ===== Mode switching =====
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.mode).classList.add('active');
+  });
+});
+
+// Enter key to search
+document.getElementById('ask-input').addEventListener('keydown', e => { if (e.key === 'Enter') askQuestion(); });
+
+// ===== Knowledge Base (localStorage) =====
+function getCards() {
+  return JSON.parse(localStorage.getItem('stw_cards') || '[]');
+}
+function saveCards(cards) {
+  localStorage.setItem('stw_cards', JSON.stringify(cards));
+  updateStats();
+  renderCards();
+}
+function addCard(card) {
+  const cards = getCards();
+  card.id = Date.now();
+  card.created = new Date().toISOString().slice(0, 10);
+  cards.unshift(card);
+  saveCards(cards);
+}
+
+// ===== Stats =====
+function updateStats() {
+  const cards = getCards();
+  document.getElementById('card-count').textContent = cards.length;
+  const cats = new Set(cards.map(c => c.category));
+  document.getElementById('category-count').textContent = cats.size;
+  const masters = new Set(cards.map(c => c.master));
+  document.getElementById('master-count').textContent = masters.size;
+}
+
+// ===== Render all cards =====
+function renderCards() {
+  const cards = getCards();
+  const el = document.getElementById('card-list');
+  if (cards.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div>還沒有知識卡片<br>切到「師傅錄入」開始建立</div>';
+    return;
+  }
+  el.innerHTML = cards.map((c, i) => cardHTML(c, i)).join('');
+}
+function cardHTML(c, idx) {
+  return `<div class="card" id="card-${idx+1}">
+    <div class="card-meta">#${idx+1} ・ ${c.master} ・ ${c.category} ・ ${c.created}</div>
+    <h3>${c.title}</h3>
+    <div class="card-section"><strong>🔍 問題</strong><p>${c.problem}</p></div>
+    <div class="card-section"><strong>✅ 解法</strong><p>${c.solution}</p></div>
+    <div class="card-section"><strong>📋 適用情境</strong><p>${c.context}</p></div>
+    ${c.warning ? `<div class="card-section"><strong>⚠️ 注意事項</strong><p>${c.warning}</p></div>` : ''}
+    <button class="btn btn-secondary btn-sm" onclick="deleteCard(${idx})">🗑️ 刪除</button>
+  </div>`;
+}
+function deleteCard(idx) {
+  if (!confirm('確定刪除這張知識卡片？')) return;
+  const cards = getCards();
+  cards.splice(idx, 1);
+  saveCards(cards);
+}
+
+// ===== Speech Recognition =====
+let recognition = null;
+let isRecording = false;
+
+function startRec() {
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    document.getElementById('rec-status').innerHTML = '<div class="status status-err">你的瀏覽器不支援語音辨識，請用 Chrome</div>';
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'zh-TW';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  let finalText = '';
+  recognition.onresult = (e) => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalText += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    document.getElementById('speech-text').value = finalText + interim;
+    document.getElementById('raw-speech').style.display = 'block';
+  };
+  recognition.onerror = (e) => {
+    document.getElementById('rec-status').innerHTML = `<div class="status status-err">語音辨識錯誤：${e.error}</div>`;
+    isRecording = false;
+    document.getElementById('rec-btn').classList.remove('recording');
+  };
+  recognition.start();
+  isRecording = true;
+  document.getElementById('rec-btn').classList.add('recording');
+  document.getElementById('rec-btn').querySelector('span:last-child').textContent = '正在聽...';
+  document.getElementById('rec-status').innerHTML = '<div class="status status-warn">🎤 正在聽⋯⋯放開按鈕即停止</div>';
+}
+
+function stopRec() {
+  if (recognition && isRecording) {
+    recognition.stop();
+    isRecording = false;
+    document.getElementById('rec-btn').classList.remove('recording');
+    document.getElementById('rec-btn').querySelector('span:last-child').textContent = '按住講話';
+    document.getElementById('rec-status').innerHTML = '';
+  }
+}
+
+function clearRec() {
+  document.getElementById('speech-text').value = '';
+  document.getElementById('raw-speech').style.display = 'none';
+  document.getElementById('card-preview').innerHTML = '';
+}
+
+// ===== AI Call =====
+async function callAI(prompt) {
+  const key = sessionStorage.getItem('stw_api-key');
+  const provider = sessionStorage.getItem('stw_ai-provider') || 'gemini';
+  if (!key) throw new Error('請先在設定區填入 API Key');
+
+  if (provider === 'gemini') {
+    const model = 'gemini-3.1-flash-lite-preview';
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    const body = await r.text();
+    if (r.ok) {
+      const d = JSON.parse(body);
+      const text = d.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) return text;
+      throw new Error('模型回傳空內容');
+    }
+    let msg = `HTTP ${r.status}`;
+    try { const e = JSON.parse(body); msg = e.error?.message || msg; } catch(_) {}
+    throw new Error(msg);
+  } else {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: prompt }], temperature: 0.3 })
+    });
+    if (!r.ok) throw new Error('API 錯誤：' + r.status);
+    const d = await r.json();
+    return d.choices?.[0]?.message?.content || '';
+  }
+}
+
+// ===== Test key =====
+async function testKey() {
+  const key = document.getElementById('api-key').value.trim();
+  const provider = document.getElementById('ai-provider').value;
+  const el = document.getElementById('key-status');
+  if (!key) { el.innerHTML = '<div class="status status-warn">請先填入 API Key</div>'; return; }
+  el.innerHTML = '<div class="loading">測試中</div>';
+  try {
+    if (provider === 'gemini') {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+      if (!r.ok) throw new Error('Key 無效');
+    } else {
+      const r = await fetch('https://api.openai.com/v1/models', { headers: { 'Authorization': 'Bearer ' + key } });
+      if (!r.ok) throw new Error('Key 無效');
+    }
+    sessionStorage.setItem('stw_api-key', key);
+    sessionStorage.setItem('stw_ai-provider', provider);
+    el.innerHTML = '<div class="status status-ok">✅ 連線成功！</div>';
+  } catch(e) {
+    el.innerHTML = '<div class="status status-err">❌ ' + e.message + '</div>';
+  }
+}
+
+// ===== Process speech → knowledge card =====
+async function processToCard() {
+  const speech = document.getElementById('speech-text').value.trim();
+  if (!speech) return;
+  const master = document.getElementById('master-name').value || '匿名師傅';
+  const category = document.getElementById('record-category').value;
+  const el = document.getElementById('card-preview');
+  el.innerHTML = '<div class="loading">AI 正在整理師傅的經驗</div>';
+
+  const prompt = `你是工廠知識管理助手。以下是一位有 25 年經驗的老師傅口述的工作經驗，請整理成結構化的知識卡片。
+
+師傅原話（口語，可能有贅字、重複、台語）：
+「${speech}」
+
+請用 JSON 格式回傳，不要加 markdown 標記：
+{
+  "title": "一句話標題（15字內）",
+  "problem": "什麼情況下會遇到這個問題",
+  "solution": "怎麼解決（步驟化，用師傅的語氣但整理清楚）",
+  "context": "什麼時候適用這個方法",
+  "warning": "注意事項或容易犯的錯（沒有就填空字串）"
+}
+
+重要：
+- 保留師傅的語氣和用詞（例如「催落去」「歸組」這些保留）
+- solution 要具體、有步驟，不要抽象
+- 繁體中文`;
+
+  try {
+    const result = await callAI(prompt);
+    const clean = result.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+    const card = JSON.parse(clean);
+    card.master = master;
+    card.category = category;
+
+    el.innerHTML = `
+      <h3 style="margin:16px 0 8px; font-size:16px;">📝 AI 整理結果（確認後儲存）</h3>
+      ${cardHTML(card, -1)}
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick='confirmSave(${JSON.stringify(JSON.stringify(card))})'>💾 儲存到知識庫</button>
+        <button class="btn btn-secondary" onclick="processToCard()">🔄 重新整理</button>
+      </div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="status status-err">❌ ${e.message}</div>`;
+  }
+}
+
+function confirmSave(cardJson) {
+  const card = JSON.parse(cardJson);
+  addCard(card);
+  document.getElementById('card-preview').innerHTML = '<div class="status status-ok">✅ 已儲存！師傅的經驗不會失傳了。</div>';
+  clearRec();
+}
+
+// ===== TF-IDF Vector Search =====
+function tokenize(text) {
+  const tokens = [];
+  let buf = '';
+  for (const ch of text) {
+    if (/[a-zA-Z0-9]/.test(ch)) { buf += ch.toLowerCase(); }
+    else {
+      if (buf) { tokens.push(buf); buf = ''; }
+      if (/[\u4e00-\u9fff]/.test(ch)) tokens.push(ch);
+    }
+  }
+  if (buf) tokens.push(buf);
+  const cjk = tokens.filter(t => t.length === 1 && /[\u4e00-\u9fff]/.test(t));
+  for (let i = 0; i < cjk.length - 1; i++) tokens.push(cjk[i] + cjk[i+1]);
+  return tokens;
+}
+
+function queryVector(query, vocabMap, idfMap) {
+  const tokens = tokenize(query);
+  const tf = {};
+  tokens.forEach(t => { tf[t] = (tf[t] || 0) + 1; });
+  const vec = {};
+  for (const [tok, cnt] of Object.entries(tf)) {
+    const idx = vocabMap[tok];
+    if (idx !== undefined) vec[idx] = (1 + Math.log(cnt)) * (idfMap[idx] || 1);
+  }
+  let norm = 0;
+  for (const v of Object.values(vec)) norm += v * v;
+  norm = Math.sqrt(norm) || 1;
+  for (const k in vec) vec[k] /= norm;
+  return vec;
+}
+
+function cosineSim(a, b) {
+  let dot = 0;
+  for (const k in a) { if (b[k]) dot += a[k] * b[k]; }
+  return dot; // both already L2-normalized
+}
+
+function searchCards(query, cards, vocabMap, idfMap, topK = 5) {
+  const qVec = queryVector(query, vocabMap, idfMap);
+  const scored = cards.map((c, i) => ({ idx: i, score: cosineSim(qVec, c.vec || {}) }));
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, topK).filter(s => s.score > 0.01);
+}
+
+// ===== Ask question =====
+async function askQuestion() {
+  const q = document.getElementById('ask-input').value.trim();
+  if (!q) return;
+  const cards = getCards();
+  const el = document.getElementById('ask-output');
+
+  if (cards.length === 0) {
+    el.innerHTML = '<div class="status status-warn">知識庫還是空的，請先載入範例資料</div>';
+    return;
+  }
+
+  const key = sessionStorage.getItem('stw_api-key');
+  if (!key) {
+    el.innerHTML = '<div class="status status-warn">請先到「師傅錄入」→ 設定，填入 API Key</div>';
+    return;
+  }
+
+  // Step 1: Vector search (local, instant)
+  el.innerHTML = '<div class="loading">搜尋知識庫中</div>';
+  const hits = searchCards(q, cards, window._vocabMap || {}, window._idfMap || {});
+
+  if (hits.length === 0) {
+    el.innerHTML = '<div class="status status-warn">沒有找到相關的知識卡片，試試換個問法？</div>';
+    return;
+  }
+
+  // Show which cards matched
+  const matchInfo = hits.map(h => `#${h.idx+1} ${cards[h.idx].title} (${(h.score*100).toFixed(0)}%)`).join('、');
+  el.innerHTML = `<div class="hint" style="margin-bottom:8px">🔍 向量比對命中：${matchInfo}</div><div class="loading">AI 正在整合師傅的經驗</div>`;
+
+  // Step 2: Only send top hits to LLM
+  const topCards = hits.map(h => {
+    const c = cards[h.idx];
+    return `[卡片${h.idx+1}] ${c.title}\n師傅：${c.master}｜類別：${c.category}\n問題：${c.problem}\n解法：${c.solution}\n情境：${c.context}\n注意：${c.warning || '無'}`;
+  }).join('\n---\n');
+
+  const prompt = `你是工廠的知識庫助手。有人問了一個問題，以下是向量搜尋出最相關的 ${hits.length} 張知識卡片。
+
+問題：「${q}」
+
+相關知識卡片：
+${topCards}
+
+回答規則：
+1. 綜合這幾張卡片回答，用師傅的語氣（親切、直接、像在現場教）
+2. 開頭不要用「你好」「新人你好」，直接回答問題
+3. 明確標記是哪位師傅說的
+4. 如果卡片只有部分相關，誠實說「師傅們有講到類似的，但你的情況可能要再確認」
+5. 繁體中文，不要用 markdown 標記
+
+格式：
+先直接回答問題（2-3 段），最後一行標記「📌 來源：卡片 X — XXX師傅」`;
+
+  try {
+    let result = await callAI(prompt);
+    // 把「卡片XX」變成可點擊連結，點擊後跳到該卡片
+    function cardLink(n) {
+      return `<a href="#card-${n}" style="color:#e67e22;text-decoration:underline;cursor:pointer" onclick="event.preventDefault();document.querySelectorAll('.mode-btn')[0].click();setTimeout(()=>{const el=document.getElementById('card-${n}');if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.boxShadow='0 0 0 3px #e67e22';setTimeout(()=>el.style.boxShadow='',2000);}},200)">卡片${n}</a>`;
+    }
+    const linked = result.replace(/\n/g, '<br>')
+      .replace(/卡片\s*#?\s*(\d+)/g, (m, n) => cardLink(n))
+      .replace(/#(\d+)\s*[—–-]\s*/g, (m, n) => cardLink(n) + ' — ');
+    el.innerHTML = `<div class="hint" style="margin-bottom:8px">🔍 向量比對命中：${matchInfo}</div>
+      <div class="answer-card"><h3>💡 師傅們的經驗</h3>${linked}</div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="document.getElementById('ask-input').value='';document.getElementById('ask-output').innerHTML=''">清除</button>`;
+  } catch(e) {
+    el.innerHTML = `<div class="status status-err">❌ ${e.message}</div>`;
+  }
+}
+
+// ===== Demo data =====
+async function loadDemoData() {
+  if (getCards().length > 0 && !confirm('會覆蓋現有資料，確定？')) return;
+  try {
+    // Try relative path first, then absolute GitHub Pages path
+    let r = await fetch('cards-with-vectors.json');
+    if (!r.ok) r = await fetch(window.location.href.replace('index.html','').replace(/\/$/,'') + '/cards-with-vectors.json');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    saveCards(data.cards);
+    buildSearchIndex(data.cards);
+    alert(`已載入 ${data.cards.length} 筆知識卡片 ✅\n含預算 TF-IDF 向量，查詢瞬間完成`);
+    return;
+  } catch(e) {
+    console.warn('無法載入 JSON，使用內建備用資料', e);
+  }
+  // Fallback: inline minimal demo
+  const demo = [
+    { master: '陳師傅', category: '設備操作', title: '射出機合模力不足的快速判斷',
+      problem: '產品出現毛邊、溢料，懷疑合模力不夠',
+      solution: '1. 先看產品分模線有沒有明顯毛邊\n2. 用手摸分模線，刮手就是合模力不夠\n3. 調高合模力 5-10 噸試打 3 模\n4. 還有毛邊就要檢查模具分模面有沒有磨損\n5. 分模面有壓痕就該送修了，不要硬撐',
+      context: '產品突然開始出現毛邊，但配方和溫度沒改過的時候',
+      warning: '合模力不要一次調太多，每次加 5 噸就好，超過機台上限會傷機器' },
+    { master: '陳師傅', category: '品質異常', title: '射出品表面銀紋的處理',
+      problem: '產品表面出現銀色條紋（銀紋），像刮痕但摸起來是平的',
+      solution: '1. 十之八九是料沒烘乾，先去看烘料機溫度對不對\n2. ABS 要 80°C 烘 2-4 小時，PC 要 120°C 烘 4 小時\n3. 烘料機有時候感溫線壞了，溫度表顯示對但實際不夠\n4. 用手抓一把料，料是溫的才對，冷的就是烘料機有問題\n5. 如果料沒問題，就降射速，銀紋通常是射太快把空氣帶進去',
+      context: '剛開機、換料、下雨天潮溼特別容易發生',
+      warning: '下雨天烘料時間要加長 1-2 小時，別偷懶' },
+    { master: '林師傅', category: '模具保養', title: '模具咬花面的清潔方式',
+      problem: '模具的咬花面（紋路面）卡了殘料或生鏽，產品紋路不清楚',
+      solution: '1. 絕對不能用砂紙或鋼刷，會把紋路磨掉\n2. 用專門的模具清潔劑噴上去，等 5 分鐘\n3. 用銅刷輕輕順著紋路方向刷\n4. 最後用氣槍吹乾，馬上噴防鏽油\n5. 如果紋路已經磨損，就要送出去重新咬花，要花好幾萬',
+      context: '每次下模保養、換模前、產品紋路開始模糊的時候',
+      warning: '千萬不要用鋼刷！講了 100 遍還是有新人用鋼刷，一刷就毀了' },
+    { master: '林師傅', category: '設備操作', title: '換料時清缸的正確步驟',
+      problem: '要從深色料換成淺色料（或不同材質），殘料清不乾淨',
+      solution: '1. 深色換淺色最麻煩，要用清缸料（PP 或專用清缸劑）\n2. 先把螺桿溫度調高 10-20°C\n3. 加清缸料，用中速射出，一直打到出來的是乾淨的\n4. 通常要打 20-30 模才會乾淨\n5. 如果是 PC 換 POM，中間一定要用 PE 過渡，不然會分解產生毒氣',
+      context: '換料的時候，特別是深色換淺色、工程塑料互換',
+      warning: 'PC 和 POM 絕對不能直接互換！會分解產生甲醛，很危險' },
+    { master: '陳師傅', category: '客戶需求', title: '客戶 A（汽車零件）的特殊要求',
+      problem: '客戶 A 的汽車內裝件驗收標準很嚴，常被退貨',
+      solution: '1. 客戶 A 的件一定要用指定料批，不能隨便換供應商\n2. 每 50 模要做一次尺寸自主檢查，不是等 QC 來量\n3. 外觀零缺點，連 0.3mm 的小黑點都不行\n4. 包裝要用他們指定的防靜電袋，普通 PE 袋不收\n5. 出貨前一定要附 FAI 報告和材質證明',
+      context: '生產客戶 A（日系汽車品牌）的內裝塑膠件時',
+      warning: '被退一次貨要賠加工費+運費+重新生產，虧大了，不如生產時多花時間檢查' },
+    { master: '林師傅', category: '品質異常', title: '產品縮水的判斷和調整',
+      problem: '產品表面凹陷（縮水），特別是厚的地方和柱位旁邊',
+      solution: '1. 先加保壓壓力，每次加 5%，觀察凹陷有沒有改善\n2. 保壓時間也要夠，看螺桿有沒有回彈判斷\n3. 如果保壓調到很高還是縮，就是模具問題——澆口太小\n4. 暫時的解法是降模溫讓表面先凍結，但根本還是要改模\n5. 柱位縮水可以在柱位背面加火山口排氣，很有效',
+      context: '厚件、有柱位（boss）的產品、冷卻不均的模具',
+      warning: '保壓不要加太高，超過螺桿的極限會傷機器，也可能漲模造成毛邊' },
+    { master: '陳師傅', category: '安全注意', title: '清理噴嘴堵塞的安全步驟',
+      problem: '噴嘴被冷料堵住，料出不來',
+      solution: '1. 先把射出壓力降到最低\n2. 用銅棒（不能用鐵的）從噴嘴口輕輕敲\n3. 如果敲不掉，就要拆噴嘴用噴燈加熱\n4. 加熱時旁邊不能有人，要戴隔熱手套和護目鏡\n5. 拆下來的噴嘴用銅刷通，不要用鑽頭鑽',
+      context: '開機時噴嘴溫度不夠、停機太久料在裡面冷卻硬化',
+      warning: '拆噴嘴的時候滾燙的，每年都有新人被燙傷。一定要戴手套，不要心急' },
+    { master: '林師傅', category: '設備操作', title: '射出機開機暖機的正確順序',
+      problem: '開機直接生產，產品品質不穩定、機器容易故障',
+      solution: '1. 先開電源，讓控制器自檢\n2. 開加熱，從料管尾段開始加熱，等 20 分鐘讓溫度穩定\n3. 溫度到了之後再等 10 分鐘做「均溫」，不要馬上動螺桿\n4. 手動低速低壓先射幾模空料出來\n5. 看出料順暢了才開始正式生產\n6. 前 10 模不要交貨，品質還不穩定',
+      context: '每天早上開機、長假後重新開機',
+      warning: '沒均溫就動螺桿，螺桿上的冷料會磨損料管壁，時間久了就要換料管，幾十萬' },
+    { master: '陳師傅', category: '模具保養', title: '模具水路阻塞的預防和處理',
+      problem: '模溫不均，產品一邊冷一邊熱，翹曲變形',
+      solution: '1. 先確認是不是水路塞住——拔掉水管看水流量，跟旁邊的水路比\n2. 水量明顯比較小就是塞了，用高壓氣吹看看\n3. 吹不通就要用除鏽除垢液泡，泡一個晚上通常就通了\n4. 預防最重要：用塔水的工廠一定要裝過濾器\n5. 每三個月用除垢液循環清洗一次水路',
+      context: '產品翹曲、變形、尺寸不穩定，而且同一模不同穴差異大',
+      warning: '不要用自來水當冷卻水，水垢會塞住水路。要用冰水機的循環水' },
+    { master: '林師傅', category: '客戶需求', title: '客戶 B（3C 產品）的配色要求',
+      problem: '客戶 B 的手機殼顏色總是對不上色板',
+      solution: '1. 客戶 B 的色板要在 D65 光源下比色，不能用日光燈\n2. 每次進的色母批次不同，顏色會有微差\n3. 新批次的色母一定要先試射 5 模和色板比對\n4. 比色時產品要放冷（至少 1 小時），熱的顏色會偏\n5. 色差用 Delta E 量測，客戶 B 的要求是 ΔE < 1.0，非常嚴',
+      context: '生產客戶 B 的 3C 外殼件，特別是換色母批次的時候',
+      warning: '千萬不要自己加色母調色，客戶 B 會驗成分，被發現就取消訂單' }
+  ];
+  saveCards(demo);
+  alert('已載入 10 筆範例知識卡片 ✅');
+}
+
+// ===== Build search index from cards with vectors =====
+function buildSearchIndex(cards) {
+  // Rebuild vocab map and IDF from card content
+  const allTokens = {};
+  const N = cards.length;
+  const docSets = cards.map(c => {
+    const text = `${c.title} ${c.problem} ${c.solution} ${c.context} ${c.warning||''}`;
+    const toks = tokenize(text);
+    const unique = new Set(toks);
+    unique.forEach(t => { allTokens[t] = (allTokens[t] || 0) + 1; });
+    return unique;
+  });
+  // Build vocab (tokens appearing 2+ times, <80% docs)
+  const vocab = Object.entries(allTokens)
+    .filter(([_, f]) => f >= 2 && f <= N * 0.8)
+    .sort((a, b) => a[0].localeCompare(b[0]));
+  const vocabMap = {};
+  const idfMap = {};
+  vocab.forEach(([tok, df], i) => {
+    vocabMap[tok] = String(i);
+    idfMap[String(i)] = Math.log(N / df);
+  });
+  window._vocabMap = vocabMap;
+  window._idfMap = idfMap;
+}
+
+// ===== Init =====
+updateStats();
+renderCards();
+// If cards already loaded, build search index
+const existingCards = getCards();
+if (existingCards.length > 0 && existingCards[0].vec) {
+  buildSearchIndex(existingCards);
+}
+
+// Add demo button if empty
+if (getCards().length === 0) {
+  document.getElementById('card-list').innerHTML += '<button class="btn btn-primary" style="margin-top:12px" onclick="loadDemoData()">📦 載入 100 筆範例資料（塑膠射出成型）</button>';
+}
+</script>
+</body>
+</html>
