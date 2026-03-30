@@ -499,16 +499,25 @@ function refreshClassify() {
     : renderInvTable(classified, true);
 }
 
-function renderInvTable(invs, editable) {
+function renderInvTable(invs, editable, deletable) {
   return `<div class="table-wrap"><table class="data-table">
-    <tr><th>發票號碼</th><th>日期</th><th>廠商</th><th>品名</th><th>金額</th><th>科目</th></tr>
+    <tr><th>發票號碼</th><th>日期</th><th>廠商</th><th>品名</th><th>金額</th><th>科目</th>${deletable ? '<th></th>' : ''}</tr>
     ${invs.map(inv => `<tr>
       <td>${inv.invoice_no || '-'}</td><td>${inv.date || '-'}</td>
       <td>${inv.seller_name || '-'}</td><td>${inv.item || '-'}</td>
       <td style="text-align:right">$${(inv.total || inv.amount || 0).toLocaleString()}</td>
       <td>${editable ? catDropdown(inv) : `<span class="tag tag-cat">${inv.category || '未分類'}</span>`}</td>
+      ${deletable ? `<td><button class="btn btn-secondary btn-sm" style="margin:0;padding:4px 8px;font-size:11px;color:#922b21" onclick="deleteInv('${inv.id}')">刪除</button></td>` : ''}
     </tr>`).join('')}
   </table></div>`;
+}
+
+function deleteInv(id) {
+  if (!confirm('確定刪除這筆發票？')) return;
+  const inv = getInvoices().filter(i => String(i.id) !== String(id));
+  saveInvoices(inv);
+  refreshOverview();
+  runMatch(); // 重新跑對帳更新畫面
 }
 
 function catDropdown(inv) {
@@ -558,7 +567,7 @@ function runMatch() {
   const dupes = Object.entries(noCount).filter(([_, c]) => c > 1).map(([n]) => n);
   if (dupes.length) {
     const dupeInvs = invoices.filter(i => dupes.includes(i.invoice_no));
-    html += `<details class="status status-err" open><summary style="cursor:pointer">⚠️ 重複發票 ${dupes.length} 組：${dupes.join('、')}</summary>` + renderInvTable(dupeInvs, false) + '</details>';
+    html += `<details class="status status-err" open><summary style="cursor:pointer">⚠️ 重複發票 ${dupes.length} 組：${dupes.join('、')}</summary>` + renderInvTable(dupeInvs, false, true) + '</details>';
   }
 
   // Amount anomaly (>3x average)
@@ -566,7 +575,7 @@ function runMatch() {
   const anomalies = invoices.filter(i => (i.total || 0) > avg * 3);
   if (anomalies.length) {
     const anomalyNos = anomalies.map(a => a.invoice_no).join('、');
-    html += `<details class="status status-warn" open><summary style="cursor:pointer">⚠️ 金額異常 ${anomalies.length} 筆（超過平均 $${Math.round(avg).toLocaleString()} 的 3 倍）：${anomalyNos}</summary>` + renderInvTable(anomalies, false) + '</details>';
+    html += `<details class="status status-warn" open><summary style="cursor:pointer">⚠️ 金額異常 ${anomalies.length} 筆（超過平均 $${Math.round(avg).toLocaleString()} 的 3 倍）：${anomalyNos}</summary>` + renderInvTable(anomalies, false, true) + '</details>';
   }
 
   // Invoice vs Orders
