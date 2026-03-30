@@ -499,14 +499,21 @@ function refreshClassify() {
     : renderInvTable(classified, true);
 }
 
+function sourceTag(s) {
+  const map = { csv: ['📥 CSV','#d6eaf8','#21618c'], scan: ['📸 拍照','#fdebd0','#b9770e'], manual: ['✏️ 手動','#e8daef','#6c3483'] };
+  const [label, bg, color] = map[s] || ['❓','#eee','#555'];
+  return `<span class="tag" style="background:${bg};color:${color}">${label}</span>`;
+}
+
 function renderInvTable(invs, editable, deletable) {
   return `<div class="table-wrap"><table class="data-table">
-    <tr><th>發票號碼</th><th>日期</th><th>廠商</th><th>品名</th><th>金額</th><th>科目</th>${deletable ? '<th></th>' : ''}</tr>
+    <tr><th>發票號碼</th><th>日期</th><th>廠商</th><th>品名</th><th>金額</th><th>科目</th><th>來源</th>${deletable ? '<th></th>' : ''}</tr>
     ${invs.map(inv => `<tr>
       <td>${inv.invoice_no || '-'}</td><td>${inv.date || '-'}</td>
       <td>${inv.seller_name || '-'}</td><td>${inv.item || '-'}</td>
       <td style="text-align:right">$${(inv.total || inv.amount || 0).toLocaleString()}</td>
       <td>${editable ? catDropdown(inv) : `<span class="tag tag-cat">${inv.category || '未分類'}</span>`}</td>
+      <td>${sourceTag(inv.source)}</td>
       ${deletable ? `<td><button class="btn btn-secondary btn-sm" style="margin:0;padding:4px 8px;font-size:11px;color:#922b21" onclick="deleteInv('${inv.id}')">刪除</button></td>` : ''}
     </tr>`).join('')}
   </table></div>`;
