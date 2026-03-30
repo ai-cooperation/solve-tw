@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>發票對帳 AI 助手</title>
+<title>發票整理助手</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, 'Noto Sans TC', sans-serif; background: #f8f9fa; color: #333; font-size: 16px; }
@@ -12,625 +12,772 @@ body { font-family: -apple-system, 'Noto Sans TC', sans-serif; background: #f8f9
 .header h1 { font-size: 20px; }
 .header small { color: #aed6f1; font-size: 13px; }
 
-/* Tabs */
 .tabs { display: flex; background: #fff; border-bottom: 1px solid #eee; overflow-x: auto; }
-.tab { flex: 1; min-width: 60px; padding: 12px 6px; text-align: center; cursor: pointer; border-bottom: 3px solid transparent; font-size: 13px; transition: all .2s; }
+.tab { flex: 1; min-width: 55px; padding: 10px 4px; text-align: center; cursor: pointer; border-bottom: 3px solid transparent; font-size: 12px; transition: all .2s; }
 .tab.active { border-bottom-color: #2980b9; background: #eaf2f8; font-weight: bold; }
-.tab-icon { font-size: 20px; display: block; margin-bottom: 2px; }
+.tab-icon { font-size: 18px; display: block; margin-bottom: 2px; }
 
-.content { max-width: 700px; margin: 0 auto; padding: 16px; }
+.content { max-width: 720px; margin: 0 auto; padding: 16px; }
 .panel { display: none; }
 .panel.active { display: block; }
 
-/* Form */
 label { display: block; font-weight: bold; margin: 14px 0 4px; font-size: 14px; }
 input, textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; font-family: inherit; }
+textarea { font-size: 13px; font-family: monospace; }
 input:focus, textarea:focus { outline: none; border-color: #2980b9; box-shadow: 0 0 0 3px rgba(41,128,185,.15); }
 .hint { font-size: 13px; color: #999; margin-top: 4px; }
 
-/* Buttons */
 .btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 12px; transition: all .2s; }
 .btn-primary { background: #2980b9; color: #fff; }
 .btn-primary:hover { background: #2471a3; }
 .btn-secondary { background: #eee; color: #555; }
-.btn-sm { display: inline-block; width: auto; padding: 8px 14px; font-size: 14px; margin-top: 8px; }
+.btn-sm { display: inline-block; width: auto; padding: 8px 14px; font-size: 14px; margin: 4px 4px 4px 0; }
 .btn-row { display: flex; gap: 8px; margin-top: 12px; }
 .btn-row .btn { flex: 1; margin-top: 0; }
 
-/* Upload area */
-.upload-zone { border: 2px dashed #bbb; border-radius: 12px; padding: 30px; text-align: center; cursor: pointer; transition: all .2s; margin-top: 12px; }
-.upload-zone:hover, .upload-zone.dragover { border-color: #2980b9; background: #eaf2f8; }
+/* Upload */
+.upload-zone { border: 2px dashed #bbb; border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; transition: all .2s; margin-top: 12px; }
+.upload-zone:hover { border-color: #2980b9; background: #eaf2f8; }
 .upload-zone input { display: none; }
-.upload-icon { font-size: 40px; margin-bottom: 8px; }
 .upload-preview { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.upload-preview img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd; }
+.upload-preview img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd; }
 
 /* Table */
-.data-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
-.data-table th { background: #2980b9; color: #fff; padding: 8px 6px; text-align: left; font-size: 13px; position: sticky; top: 0; }
-.data-table td { padding: 8px 6px; border-bottom: 1px solid #eee; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th { background: #2980b9; color: #fff; padding: 8px 6px; text-align: left; font-size: 12px; position: sticky; top: 0; }
+.data-table td { padding: 7px 6px; border-bottom: 1px solid #eee; }
 .data-table tr:hover { background: #eaf2f8; }
-.table-wrap { max-height: 400px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; margin-top: 12px; }
+.data-table tr.row-warn { background: #fef9e7; }
+.data-table tr.row-err { background: #fdedec; }
+.table-wrap { max-height: 420px; overflow: auto; border: 1px solid #eee; border-radius: 8px; margin-top: 12px; }
 
-/* Tags */
-.tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-right: 4px; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-right: 3px; }
 .tag-ok { background: #d4efdf; color: #1e8449; }
 .tag-warn { background: #fdebd0; color: #b9770e; }
 .tag-err { background: #fadbd8; color: #922b21; }
-.tag-cat { background: #d6eaf8; color: #21618c; }
+.tag-cat { background: #d6eaf8; color: #21618c; cursor: pointer; }
+.tag-cat:hover { background: #aed6f1; }
+.tag-learn { background: #e8daef; color: #6c3483; }
 
-/* Stats cards */
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 16px 0; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 16px 0; }
 .stat-card { background: #fff; border-radius: 8px; padding: 14px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
-.stat-num { font-size: 26px; font-weight: bold; color: #2980b9; }
+.stat-num { font-size: 24px; font-weight: bold; color: #2980b9; }
 .stat-label { font-size: 12px; color: #888; margin-top: 2px; }
 
-/* Status */
 .status { padding: 10px 16px; border-radius: 8px; margin: 12px 0; font-size: 14px; }
 .status-ok { background: #d4efdf; color: #1e8449; }
 .status-warn { background: #fdebd0; color: #b9770e; }
 .status-err { background: #fadbd8; color: #922b21; }
 
-/* Loading */
-.loading { text-align: center; padding: 24px; color: #999; }
+.loading { text-align: center; padding: 20px; color: #999; }
 .loading::after { content: ''; display: inline-block; width: 18px; height: 18px; border: 3px solid #ddd; border-top-color: #2980b9; border-radius: 50%; animation: spin .8s linear infinite; margin-left: 8px; vertical-align: middle; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Chart */
 .chart-bar { display: flex; align-items: center; margin: 4px 0; }
-.chart-label { width: 120px; font-size: 13px; text-align: right; padding-right: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.chart-fill { height: 22px; background: #2980b9; border-radius: 4px; min-width: 2px; transition: width .3s; }
-.chart-val { font-size: 13px; padding-left: 6px; color: #555; white-space: nowrap; }
+.chart-label { width: 100px; font-size: 12px; text-align: right; padding-right: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chart-fill { height: 20px; background: #2980b9; border-radius: 4px; min-width: 2px; transition: width .3s; }
+.chart-val { font-size: 12px; padding-left: 6px; color: #555; white-space: nowrap; }
 
-/* Settings */
-.settings { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
-.settings summary { cursor: pointer; font-weight: bold; }
+.section-title { font-size: 15px; font-weight: bold; margin: 20px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #eee; }
+
+.search-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.search-row input { flex: 1; }
+.search-row select { width: 120px; }
+
+details { margin-bottom: 12px; }
+details summary { cursor: pointer; font-weight: bold; font-size: 14px; padding: 8px 0; }
+
+.rule-list { font-size: 13px; }
+.rule-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid #f5f5f5; }
+.rule-item .rule-key { font-weight: bold; min-width: 120px; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1>📄 發票對帳 AI 助手</h1>
-  <small>拍照辨識 → 自動分類 → 一鍵對帳 ｜ cooperation.tw</small>
+  <h1>📄 發票整理助手</h1>
+  <small>匯入 → 智慧分類 → 三方對帳 → 報表 ｜ cooperation.tw</small>
 </div>
 
 <div class="tabs">
-  <div class="tab active" data-tab="scan"><span class="tab-icon">📸</span>拍照辨識</div>
-  <div class="tab" data-tab="import"><span class="tab-icon">📥</span>匯入 CSV</div>
+  <div class="tab active" data-tab="input"><span class="tab-icon">📥</span>匯入</div>
+  <div class="tab" data-tab="classify"><span class="tab-icon">🏷️</span>分類</div>
   <div class="tab" data-tab="match"><span class="tab-icon">🔗</span>對帳</div>
+  <div class="tab" data-tab="search"><span class="tab-icon">🔍</span>查找</div>
   <div class="tab" data-tab="report"><span class="tab-icon">📊</span>報表</div>
   <div class="tab" data-tab="settings"><span class="tab-icon">⚙️</span>設定</div>
 </div>
 
 <div class="content">
 
-<!-- ===== 拍照辨識 ===== -->
-<div class="panel active" id="panel-scan">
-  <p style="color:#666; margin-bottom:8px;">拍照或上傳紙本發票 → AI 自動辨識所有欄位</p>
-  <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+<!-- ===== 匯入 ===== -->
+<div class="panel active" id="panel-input">
+  <div class="stats" id="overview-stats"></div>
+
+  <div class="section-title">方式 1：CSV 匯入（電子發票、主要通道）</div>
+  <textarea id="csv-invoices" rows="6" placeholder="發票號碼,日期,廠商統編,廠商名稱,品名,數量,單價,金額,稅額"></textarea>
+  <div class="btn-row">
+    <button class="btn btn-secondary btn-sm" onclick="loadDemoInvoices()">載入 80 筆模擬發票</button>
+    <button class="btn btn-primary btn-sm" onclick="importCSV()">📥 匯入</button>
+  </div>
+
+  <div class="section-title">方式 2：拍照辨識（紙本，少量）</div>
+  <div class="upload-zone" onclick="document.getElementById('file-input').click()">
     <input type="file" id="file-input" accept="image/*" multiple capture="environment">
-    <div class="upload-icon">📸</div>
-    <div>拍照 / 選擇發票圖片</div>
-    <div class="hint">支援一次多張，JPG/PNG 皆可</div>
+    📸 拍照 / 選擇發票圖片
+    <div class="hint">Vision API 辨識，需要在設定填 API Key</div>
   </div>
   <div class="upload-preview" id="upload-preview"></div>
-  <button class="btn btn-primary" id="scan-btn" style="display:none" onclick="scanInvoices()">🔍 AI 辨識全部發票</button>
-  <div id="scan-output"></div>
+  <button class="btn btn-primary" id="scan-btn" style="display:none" onclick="scanInvoices()">🔍 AI 辨識</button>
+
+  <div class="section-title">方式 3：手動輸入</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+    <input id="m-no" placeholder="發票號碼">
+    <input id="m-date" type="date">
+    <input id="m-seller" placeholder="廠商名稱">
+    <input id="m-taxid" placeholder="統編（選填）">
+    <input id="m-item" placeholder="品名">
+    <input id="m-amount" type="number" placeholder="金額">
+  </div>
+  <button class="btn btn-secondary btn-sm" onclick="manualAdd()">+ 手動新增</button>
+
+  <div id="input-output"></div>
 </div>
 
-<!-- ===== 匯入 CSV ===== -->
-<div class="panel" id="panel-import">
-  <p style="color:#666; margin-bottom:8px;">匯入電子發票 CSV（財政部格式或自訂格式皆可）</p>
+<!-- ===== 分類 ===== -->
+<div class="panel" id="panel-classify">
+  <p class="hint" style="margin-bottom:12px;">系統根據已學會的規則自動分類。點科目標籤可修改，修改後系統會記住。</p>
 
-  <label>發票 CSV</label>
-  <textarea id="csv-invoices" placeholder="發票號碼,日期,賣方統編,賣方名稱,品名,數量,單價,金額,稅額&#10;AB12345678,2026-03-15,12345678,大同文具,A4影印紙,5,120,600,30" style="min-height:120px; font-size:14px; font-family:monospace;"></textarea>
-  <button class="btn btn-secondary btn-sm" onclick="loadDemoInvoices()">載入 50 筆模擬發票</button>
-  <button class="btn btn-primary" onclick="importCSV()">📥 匯入並自動分類</button>
-  <div id="import-output"></div>
+  <div class="stats" id="classify-stats"></div>
 
-  <h3 style="margin-top:20px; font-size:16px;">訂單 CSV（對帳用）</h3>
-  <textarea id="csv-orders" placeholder="訂單編號,供應商統編,品名,金額,日期&#10;PO-001,12345678,A4影印紙,600,2026-03-14" style="min-height:80px; font-size:14px; font-family:monospace;"></textarea>
-  <button class="btn btn-secondary btn-sm" onclick="loadDemoOrders()">載入模擬訂單</button>
+  <details open>
+    <summary>📚 已學會的分類規則（<span id="rule-count">0</span> 條）</summary>
+    <div id="rule-list" class="rule-list"></div>
+    <button class="btn btn-secondary btn-sm" onclick="exportRules()">匯出規則 JSON</button>
+  </details>
+
+  <div class="section-title">待分類發票</div>
+  <div id="classify-list"></div>
+
+  <div class="section-title">已分類發票</div>
+  <div id="classified-list"></div>
 </div>
 
 <!-- ===== 對帳 ===== -->
 <div class="panel" id="panel-match">
-  <p style="color:#666; margin-bottom:8px;">發票 vs 訂單自動比對，標記差異和異常</p>
-  <div class="stats" id="match-stats"></div>
-  <button class="btn btn-primary" onclick="runMatch()">🔗 執行對帳</button>
+  <p class="hint" style="margin-bottom:12px;">上傳訂單和/或銀行對帳單，與發票三方比對</p>
+
+  <details>
+    <summary>📋 匯入訂單 CSV</summary>
+    <textarea id="csv-orders" rows="4" placeholder="訂單編號,廠商統編,品名,金額,日期"></textarea>
+    <button class="btn btn-secondary btn-sm" onclick="loadDemoOrders()">載入模擬訂單</button>
+    <button class="btn btn-secondary btn-sm" onclick="importOrders()">匯入訂單</button>
+  </details>
+
+  <details>
+    <summary>🏦 匯入銀行對帳單 CSV</summary>
+    <textarea id="csv-bank" rows="4" placeholder="日期,摘要,支出金額,餘額"></textarea>
+    <button class="btn btn-secondary btn-sm" onclick="loadDemoBank()">載入模擬帳單</button>
+    <button class="btn btn-secondary btn-sm" onclick="importBank()">匯入帳單</button>
+  </details>
+
+  <button class="btn btn-primary" onclick="runMatch()">🔗 執行三方對帳</button>
   <div id="match-output"></div>
+</div>
+
+<!-- ===== 查找 ===== -->
+<div class="panel" id="panel-search">
+  <div class="search-row">
+    <input id="search-q" placeholder="搜尋：廠商/品名/發票號碼">
+    <select id="search-cat"><option value="">全部科目</option></select>
+  </div>
+  <div class="search-row">
+    <input id="search-from" type="date" title="起始日">
+    <input id="search-to" type="date" title="結束日">
+    <button class="btn btn-primary btn-sm" onclick="doSearch()">搜尋</button>
+  </div>
+  <div id="search-output"></div>
 </div>
 
 <!-- ===== 報表 ===== -->
 <div class="panel" id="panel-report">
-  <p style="color:#666; margin-bottom:8px;">各科目支出統計與異常摘要</p>
   <button class="btn btn-primary" onclick="genReport()">📊 產生月報表</button>
+  <button class="btn btn-secondary btn-sm" onclick="exportExcel()">📥 匯出 Excel (CSV)</button>
   <div id="report-output"></div>
 </div>
 
 <!-- ===== 設定 ===== -->
 <div class="panel" id="panel-settings">
-  <div class="settings">
-    <label>AI 服務（辨識發票用）</label>
-    <select id="ai-provider">
-      <option value="gemini">Google Gemini（免費，支援圖片辨識）</option>
-      <option value="openai">OpenAI</option>
-    </select>
-    <label>API Key</label>
-    <input type="password" id="api-key" placeholder="貼上 API Key">
-    <div class="hint" style="color:#1e8449;">🔒 Key 只在記憶體中，關頁面即消失</div>
-    <button class="btn btn-secondary btn-sm" onclick="testKey()">測試連線</button>
-    <div id="key-status"></div>
+  <div class="section-title">AI 服務（拍照辨識 + 分類不確定時用）</div>
+  <select id="ai-provider">
+    <option value="gemini">Google Gemini（免費）</option>
+    <option value="openai">OpenAI</option>
+  </select>
+  <label>API Key</label>
+  <input type="password" id="api-key" placeholder="貼上 API Key">
+  <div class="hint" style="color:#1e8449">🔒 Key 只在記憶體中，關頁面即消失</div>
+  <button class="btn btn-secondary btn-sm" onclick="testKey()">測試連線</button>
+  <div id="key-status"></div>
+
+  <div class="section-title">會計科目</div>
+  <div id="cat-tags"></div>
+  <div style="display:flex; gap:8px; margin-top:8px;">
+    <input id="new-cat" placeholder="新增科目">
+    <button class="btn btn-secondary btn-sm" onclick="addCat()">+</button>
   </div>
 
-  <div class="settings" style="margin-top:16px;">
-    <h3 style="font-size:16px; margin-bottom:8px;">會計科目對照表</h3>
-    <div class="hint" style="margin-bottom:8px;">系統預設 12 個常用科目，可自行新增</div>
-    <div id="cat-list"></div>
-    <div style="display:flex; gap:8px; margin-top:8px;">
-      <input type="text" id="new-cat" placeholder="新增科目，例：差旅費" style="flex:1">
-      <button class="btn btn-secondary btn-sm" onclick="addCategory()">+ 新增</button>
-    </div>
-  </div>
+  <div class="section-title">資料管理</div>
+  <button class="btn btn-secondary btn-sm" onclick="if(confirm('清除所有發票資料？'))clearAll()">🗑️ 清除全部資料</button>
+  <button class="btn btn-secondary btn-sm" onclick="exportAll()">💾 備份全部資料 (JSON)</button>
 </div>
 
 </div>
 
 <script>
-// ===== Tab switching =====
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    tab.classList.add('active');
-    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
-  });
-});
+// ===== Tab =====
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('panel-' + t.dataset.tab).classList.add('active');
+  if (t.dataset.tab === 'classify') refreshClassify();
+  if (t.dataset.tab === 'search') populateSearchCats();
+  if (t.dataset.tab === 'input') refreshOverview();
+}));
+
+// ===== Storage =====
+const S = key => JSON.parse(localStorage.getItem('inv2_' + key) || '[]');
+const W = (key, val) => localStorage.setItem('inv2_' + key, JSON.stringify(val));
+function getInvoices() { return S('invoices'); }
+function saveInvoices(d) { W('invoices', d); }
+function getRules() { return JSON.parse(localStorage.getItem('inv2_rules') || '{}'); }
+function saveRules(r) { localStorage.setItem('inv2_rules', JSON.stringify(r)); }
+function getOrders() { return S('orders'); }
+function saveOrders(d) { W('orders', d); }
+function getBank() { return S('bank'); }
+function saveBank(d) { W('bank', d); }
 
 // ===== Categories =====
 const DEFAULT_CATS = ['辦公用品','維修材料','水電費','電信費','運費','保險費','租金','廣告行銷','餐飲交際','清潔用品','資訊設備','雜支'];
-function getCats() { return JSON.parse(localStorage.getItem('inv_cats') || JSON.stringify(DEFAULT_CATS)); }
-function saveCats(c) { localStorage.setItem('inv_cats', JSON.stringify(c)); renderCats(); }
+function getCats() { return JSON.parse(localStorage.getItem('inv2_cats') || JSON.stringify(DEFAULT_CATS)); }
+function saveCats(c) { localStorage.setItem('inv2_cats', JSON.stringify(c)); renderCats(); }
 function renderCats() {
-  const cats = getCats();
-  document.getElementById('cat-list').innerHTML = cats.map(c => `<span class="tag tag-cat">${c}</span>`).join(' ');
+  document.getElementById('cat-tags').innerHTML = getCats().map(c => `<span class="tag tag-cat">${c}</span>`).join(' ');
 }
-function addCategory() {
+function addCat() {
   const v = document.getElementById('new-cat').value.trim();
   if (!v) return;
-  const cats = getCats();
-  if (!cats.includes(v)) { cats.push(v); saveCats(cats); }
+  const c = getCats(); if (!c.includes(v)) { c.push(v); saveCats(c); }
   document.getElementById('new-cat').value = '';
 }
 renderCats();
 
-// ===== Invoice storage =====
-function getInvoices() { return JSON.parse(localStorage.getItem('inv_data') || '[]'); }
-function saveInvoices(d) { localStorage.setItem('inv_data', JSON.stringify(d)); }
-function getOrders() { return JSON.parse(localStorage.getItem('inv_orders') || '[]'); }
-function saveOrders(d) { localStorage.setItem('inv_orders', JSON.stringify(d)); }
+// ===== Smart classify — rule-based with learning =====
+function classify(inv) {
+  const rules = getRules();
+  const seller = inv.seller_name || '';
+  const item = inv.item || '';
 
-// ===== File upload =====
-const uploadZone = document.getElementById('upload-zone');
-const fileInput = document.getElementById('file-input');
-let uploadedFiles = [];
+  // Rule 1: exact seller+item match (learned)
+  const key1 = seller + '|' + item;
+  if (rules[key1]) return rules[key1];
 
-uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
-uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
-uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
-fileInput.addEventListener('change', e => handleFiles(e.target.files));
+  // Rule 2: seller match (learned)
+  if (rules[seller]) return rules[seller];
 
-function handleFiles(files) {
-  uploadedFiles = [...files].filter(f => f.type.startsWith('image/'));
-  const preview = document.getElementById('upload-preview');
-  preview.innerHTML = '';
-  uploadedFiles.forEach(f => {
-    const img = document.createElement('img');
-    img.src = URL.createObjectURL(f);
-    preview.appendChild(img);
-  });
-  document.getElementById('scan-btn').style.display = uploadedFiles.length ? 'block' : 'none';
-}
-
-// ===== AI Call =====
-async function callAI(prompt, imageBase64) {
-  const key = sessionStorage.getItem('inv_api-key');
-  const provider = sessionStorage.getItem('inv_ai-provider') || 'gemini';
-  if (!key) throw new Error('請先到「設定」填入 API Key');
-
-  if (provider === 'gemini') {
-    const model = 'gemini-3.1-flash-lite-preview';
-    const parts = [{ text: prompt }];
-    if (imageBase64) {
-      parts.push({ inline_data: { mime_type: 'image/jpeg', data: imageBase64 } });
-    }
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts }] })
-    });
-    const body = await r.text();
-    if (r.ok) {
-      const d = JSON.parse(body);
-      return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    }
-    let msg = `HTTP ${r.status}`;
-    try { msg = JSON.parse(body).error?.message || msg; } catch(_) {}
-    throw new Error(msg);
-  } else {
-    const messages = [{ role: 'user', content: imageBase64
-      ? [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + imageBase64 } }]
-      : prompt
-    }];
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-      body: JSON.stringify({ model: 'gpt-4o-mini', messages, temperature: 0.1 })
-    });
-    if (!r.ok) throw new Error('API 錯誤：' + r.status);
-    const d = await r.json();
-    return d.choices?.[0]?.message?.content || '';
-  }
-}
-
-// ===== Test key =====
-async function testKey() {
-  const key = document.getElementById('api-key').value.trim();
-  const provider = document.getElementById('ai-provider').value;
-  const el = document.getElementById('key-status');
-  if (!key) { el.innerHTML = '<div class="status status-warn">請先填入 API Key</div>'; return; }
-  el.innerHTML = '<div class="loading">測試中</div>';
-  try {
-    if (provider === 'gemini') {
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
-      if (!r.ok) throw new Error('Key 無效');
-    } else {
-      const r = await fetch('https://api.openai.com/v1/models', { headers: { 'Authorization': 'Bearer ' + key } });
-      if (!r.ok) throw new Error('Key 無效');
-    }
-    sessionStorage.setItem('inv_api-key', key);
-    sessionStorage.setItem('inv_ai-provider', provider);
-    el.innerHTML = '<div class="status status-ok">✅ 連線成功！</div>';
-  } catch(e) {
-    el.innerHTML = '<div class="status status-err">❌ ' + e.message + '</div>';
-  }
-}
-
-// ===== Scan invoices (photo → AI) =====
-async function scanInvoices() {
-  const el = document.getElementById('scan-output');
-  el.innerHTML = `<div class="loading">正在辨識 ${uploadedFiles.length} 張發票</div>`;
-  const cats = getCats().join('、');
-  const results = [];
-
-  for (let i = 0; i < uploadedFiles.length; i++) {
-    el.innerHTML = `<div class="loading">辨識中 ${i+1}/${uploadedFiles.length}</div>`;
-    const base64 = await fileToBase64(uploadedFiles[i]);
-    const prompt = `這是一張台灣統一發票（可能是紙本三聯式、二聯式、電子發票、收銀機發票）。
-請辨識並回傳 JSON，不要加 markdown 標記：
-{
-  "invoice_no": "發票號碼（字軌+8位數字）",
-  "date": "YYYY-MM-DD",
-  "seller_name": "賣方名稱",
-  "seller_tax_id": "賣方統一編號（8位數字）",
-  "buyer_tax_id": "買方統一編號（如有）",
-  "items": [{"name":"品名","qty":數量,"price":單價,"amount":金額}],
-  "subtotal": 銷售額,
-  "tax": 稅額,
-  "total": 總計,
-  "category_suggest": "從以下科目中選最適合的：${cats}"
-}
-如果某欄位看不清楚填 null。金額必須是數字不要加逗號。`;
-
-    try {
-      const result = await callAI(prompt, base64);
-      const clean = result.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
-      const inv = JSON.parse(clean);
-      inv._source = 'scan';
-      results.push(inv);
-    } catch(e) {
-      results.push({ _error: e.message, _source: 'scan', invoice_no: `辨識失敗-${i+1}` });
-    }
-  }
-
-  // Save and show
-  const existing = getInvoices();
-  const merged = [...existing, ...results.filter(r => !r._error)];
-  saveInvoices(merged);
-
-  el.innerHTML = `<div class="status status-ok">✅ 辨識完成：${results.filter(r=>!r._error).length} 成功，${results.filter(r=>r._error).length} 失敗</div>`;
-  el.innerHTML += renderInvoiceTable(results);
-  uploadedFiles = [];
-  document.getElementById('upload-preview').innerHTML = '';
-  document.getElementById('scan-btn').style.display = 'none';
-}
-
-function fileToBase64(file) {
-  return new Promise(resolve => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.readAsDataURL(file);
-  });
-}
-
-// ===== Import CSV =====
-function importCSV() {
-  const raw = document.getElementById('csv-invoices').value.trim();
-  if (!raw) return;
-  const lines = raw.split('\n').map(l => l.split(',').map(s => s.trim()));
-  if (lines.length < 2) { document.getElementById('import-output').innerHTML = '<div class="status status-warn">至少需要標題列 + 1 筆資料</div>'; return; }
-
-  const header = lines[0];
-  const data = lines.slice(1).map(row => {
-    const obj = {};
-    header.forEach((h, i) => obj[h] = row[i] || '');
-    return obj;
-  });
-
-  // Map to standard format
-  const cats = getCats();
-  const invoices = data.map(d => ({
-    invoice_no: d['發票號碼'] || d['invoice_no'] || '',
-    date: d['日期'] || d['date'] || '',
-    seller_name: d['賣方名稱'] || d['seller_name'] || d['廠商'] || '',
-    seller_tax_id: d['賣方統編'] || d['seller_tax_id'] || d['統編'] || '',
-    items: [{ name: d['品名'] || d['item'] || '', qty: parseFloat(d['數量'] || d['qty'] || 1), price: parseFloat(d['單價'] || d['price'] || 0), amount: parseFloat(d['金額'] || d['amount'] || 0) }],
-    subtotal: parseFloat(d['金額'] || d['amount'] || 0),
-    tax: parseFloat(d['稅額'] || d['tax'] || 0),
-    total: parseFloat(d['金額'] || d['amount'] || 0) + parseFloat(d['稅額'] || d['tax'] || 0),
-    category_suggest: guessCategory(d['品名'] || d['item'] || '', cats),
-    _source: 'csv'
-  }));
-
-  const existing = getInvoices();
-  saveInvoices([...existing, ...invoices]);
-  document.getElementById('import-output').innerHTML = `<div class="status status-ok">✅ 匯入 ${invoices.length} 筆發票</div>` + renderInvoiceTable(invoices);
-}
-
-function guessCategory(itemName, cats) {
-  const rules = {
-    '辦公用品': /紙|筆|資料夾|碳粉|墨水|信封|便利貼|釘書/,
-    '維修材料': /螺絲|管|閥|軸承|皮帶|工具|焊|砂紙/,
+  // Rule 3: keyword rules (built-in)
+  const kw = {
+    '辦公用品': /紙|筆|資料夾|碳粉|墨水|信封|便利貼|釘書|文具/,
+    '維修材料': /螺絲|管|閥|軸承|皮帶|工具|焊|砂紙|五金/,
     '水電費': /電費|水費|瓦斯|台電|自來水/,
-    '電信費': /電話|網路|中華電信|遠傳|手機/,
+    '電信費': /電話|網路|中華電信|遠傳|手機|月費/,
     '運費': /運費|快遞|宅配|貨運|物流/,
     '保險費': /保險|產險|壽險/,
     '租金': /租金|房租|場地/,
     '廣告行銷': /廣告|印刷|名片|海報|DM|看板/,
     '餐飲交際': /餐|飲|便當|咖啡|茶|聚餐/,
     '清潔用品': /清潔|洗|抹布|垃圾袋|衛生紙/,
-    '資訊設備': /電腦|螢幕|鍵盤|滑鼠|硬碟|記憶體|軟體|網域/,
+    '資訊設備': /電腦|螢幕|鍵盤|滑鼠|硬碟|記憶體|軟體|網域|SSD/,
   };
-  for (const [cat, re] of Object.entries(rules)) {
-    if (cats.includes(cat) && re.test(itemName)) return cat;
+  const cats = getCats();
+  for (const [cat, re] of Object.entries(kw)) {
+    if (cats.includes(cat) && (re.test(item) || re.test(seller))) return cat;
   }
-  return '雜支';
+  return null; // 無法分類
 }
 
-// ===== Render table =====
-function renderInvoiceTable(invoices) {
-  if (!invoices.length) return '';
+function learnRule(seller, item, category) {
+  const rules = getRules();
+  if (item) rules[seller + '|' + item] = category;
+  rules[seller] = category;
+  saveRules(rules);
+}
+
+// ===== Import CSV =====
+function parseCSV(raw) {
+  const lines = raw.trim().split('\n').map(l => l.split(',').map(s => s.trim()));
+  if (lines.length < 2) return [];
+  const h = lines[0];
+  return lines.slice(1).map(row => {
+    const o = {}; h.forEach((k, i) => o[k] = row[i] || ''); return o;
+  });
+}
+
+function importCSV() {
+  const raw = document.getElementById('csv-invoices').value.trim();
+  if (!raw) return;
+  const data = parseCSV(raw);
+  const invoices = data.map(d => {
+    const inv = {
+      id: Date.now() + Math.random(),
+      invoice_no: d['發票號碼'] || '',
+      date: d['日期'] || '',
+      seller_name: d['廠商名稱'] || d['賣方名稱'] || '',
+      seller_tax_id: d['廠商統編'] || d['賣方統編'] || '',
+      item: d['品名'] || '',
+      qty: parseFloat(d['數量'] || 1),
+      price: parseFloat(d['單價'] || 0),
+      amount: parseFloat(d['金額'] || 0),
+      tax: parseFloat(d['稅額'] || 0),
+      total: parseFloat(d['金額'] || 0) + parseFloat(d['稅額'] || 0),
+      category: null,
+      source: 'csv',
+    };
+    inv.category = classify(inv);
+    return inv;
+  });
+  const existing = getInvoices();
+  saveInvoices([...existing, ...invoices]);
+  const classified = invoices.filter(i => i.category).length;
+  document.getElementById('input-output').innerHTML = `<div class="status status-ok">✅ 匯入 ${invoices.length} 筆，自動分類 ${classified} 筆，待分類 ${invoices.length - classified} 筆</div>`;
+  refreshOverview();
+}
+
+// ===== Manual add =====
+function manualAdd() {
+  const inv = {
+    id: Date.now() + Math.random(),
+    invoice_no: document.getElementById('m-no').value.trim(),
+    date: document.getElementById('m-date').value,
+    seller_name: document.getElementById('m-seller').value.trim(),
+    seller_tax_id: document.getElementById('m-taxid').value.trim(),
+    item: document.getElementById('m-item').value.trim(),
+    amount: parseFloat(document.getElementById('m-amount').value || 0),
+    tax: 0, total: parseFloat(document.getElementById('m-amount').value || 0),
+    category: null, source: 'manual',
+  };
+  if (!inv.invoice_no && !inv.item) return;
+  inv.category = classify(inv);
+  const all = getInvoices(); all.push(inv); saveInvoices(all);
+  document.getElementById('input-output').innerHTML = `<div class="status status-ok">✅ 已新增${inv.category ? '（自動分類：' + inv.category + '）' : '（待分類）'}</div>`;
+  ['m-no','m-date','m-seller','m-taxid','m-item','m-amount'].forEach(id => document.getElementById(id).value = '');
+  refreshOverview();
+}
+
+// ===== Photo scan =====
+let uploadedFiles = [];
+const fileInput = document.getElementById('file-input');
+fileInput.addEventListener('change', e => {
+  uploadedFiles = [...e.target.files].filter(f => f.type.startsWith('image/'));
+  const preview = document.getElementById('upload-preview');
+  preview.innerHTML = '';
+  uploadedFiles.forEach(f => { const img = document.createElement('img'); img.src = URL.createObjectURL(f); preview.appendChild(img); });
+  document.getElementById('scan-btn').style.display = uploadedFiles.length ? 'block' : 'none';
+});
+
+async function scanInvoices() {
+  const el = document.getElementById('input-output');
+  const cats = getCats().join('、');
+  el.innerHTML = `<div class="loading">辨識中 0/${uploadedFiles.length}</div>`;
+  const results = [];
+  for (let i = 0; i < uploadedFiles.length; i++) {
+    el.innerHTML = `<div class="loading">辨識中 ${i+1}/${uploadedFiles.length}</div>`;
+    const b64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result.split(',')[1]); fr.readAsDataURL(uploadedFiles[i]); });
+    try {
+      const result = await callAI(`這是一張台灣統一發票。請辨識並回傳 JSON（不要 markdown）：
+{"invoice_no":"字軌+8位數字","date":"YYYY-MM-DD","seller_name":"賣方","seller_tax_id":"8位統編","item":"主要品名","amount":數字,"tax":數字,"total":數字}
+看不清楚的填 null。`, b64);
+      const clean = result.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+      const inv = JSON.parse(clean);
+      inv.id = Date.now() + Math.random();
+      inv.source = 'scan';
+      inv.category = classify(inv);
+      results.push(inv);
+    } catch(e) { results.push({ id: Date.now(), invoice_no: '辨識失敗', item: e.message, amount: 0, total: 0, source: 'scan', _error: true }); }
+  }
+  const good = results.filter(r => !r._error);
+  const all = getInvoices(); saveInvoices([...all, ...good]);
+  el.innerHTML = `<div class="status status-ok">✅ ${good.length} 張辨識成功，${results.length - good.length} 張失敗</div>`;
+  uploadedFiles = []; document.getElementById('upload-preview').innerHTML = ''; document.getElementById('scan-btn').style.display = 'none';
+  refreshOverview();
+}
+
+// ===== AI Call =====
+async function callAI(prompt, imageBase64) {
+  const key = sessionStorage.getItem('inv2_api-key');
+  const provider = sessionStorage.getItem('inv2_ai-provider') || 'gemini';
+  if (!key) throw new Error('請先到設定填 API Key');
+  if (provider === 'gemini') {
+    const parts = [{ text: prompt }];
+    if (imageBase64) parts.push({ inline_data: { mime_type: 'image/jpeg', data: imageBase64 } });
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${key}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts }] })
+    });
+    const body = await r.text();
+    if (r.ok) { const d = JSON.parse(body); return d.candidates?.[0]?.content?.parts?.[0]?.text || ''; }
+    let msg = 'HTTP ' + r.status; try { msg = JSON.parse(body).error?.message || msg; } catch(_) {} throw new Error(msg);
+  } else {
+    const messages = [{ role: 'user', content: imageBase64
+      ? [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + imageBase64 } }]
+      : prompt }];
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ model: 'gpt-4o-mini', messages, temperature: 0.1 })
+    });
+    if (!r.ok) throw new Error('API ' + r.status);
+    return (await r.json()).choices?.[0]?.message?.content || '';
+  }
+}
+
+function testKey() {
+  const key = document.getElementById('api-key').value.trim();
+  const provider = document.getElementById('ai-provider').value;
+  const el = document.getElementById('key-status');
+  if (!key) { el.innerHTML = '<div class="status status-warn">請填 API Key</div>'; return; }
+  el.innerHTML = '<div class="loading">測試中</div>';
+  (provider === 'gemini'
+    ? fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`)
+    : fetch('https://api.openai.com/v1/models', { headers: { 'Authorization': 'Bearer ' + key } })
+  ).then(r => {
+    if (r.ok) { sessionStorage.setItem('inv2_api-key', key); sessionStorage.setItem('inv2_ai-provider', provider); el.innerHTML = '<div class="status status-ok">✅ 連線成功</div>'; }
+    else el.innerHTML = '<div class="status status-err">❌ Key 無效</div>';
+  }).catch(e => el.innerHTML = '<div class="status status-err">❌ ' + e.message + '</div>');
+}
+
+// ===== Overview stats =====
+function refreshOverview() {
+  const inv = getInvoices();
+  const classified = inv.filter(i => i.category).length;
+  const total = inv.reduce((s, i) => s + (i.total || i.amount || 0), 0);
+  document.getElementById('overview-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${inv.length}</div><div class="stat-label">發票總數</div></div>
+    <div class="stat-card"><div class="stat-num">${classified}</div><div class="stat-label">已分類</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:${inv.length-classified?'#b9770e':'#1e8449'}">${inv.length - classified}</div><div class="stat-label">待分類</div></div>
+    <div class="stat-card"><div class="stat-num">$${total.toLocaleString()}</div><div class="stat-label">總金額</div></div>`;
+}
+refreshOverview();
+
+// ===== Classify panel =====
+function refreshClassify() {
+  const inv = getInvoices();
+  const unclassified = inv.filter(i => !i.category);
+  const classified = inv.filter(i => i.category);
+  const rules = getRules();
+  const ruleCount = Object.keys(rules).length;
+
+  document.getElementById('rule-count').textContent = ruleCount;
+  document.getElementById('rule-list').innerHTML = ruleCount === 0
+    ? '<div class="hint">還沒有學到任何規則。分類第一筆發票後系統會開始學習。</div>'
+    : Object.entries(rules).map(([k, v]) => `<div class="rule-item"><span class="rule-key">${k}</span> → <span class="tag tag-learn">${v}</span></div>`).join('');
+
+  // Stats
+  const byCat = {};
+  classified.forEach(i => { byCat[i.category] = (byCat[i.category] || 0) + 1; });
+  document.getElementById('classify-stats').innerHTML = Object.entries(byCat)
+    .sort((a, b) => b[1] - a[1])
+    .map(([c, n]) => `<div class="stat-card"><div class="stat-num">${n}</div><div class="stat-label">${c}</div></div>`).join('');
+
+  // Unclassified
+  document.getElementById('classify-list').innerHTML = unclassified.length === 0
+    ? '<div class="status status-ok">全部已分類 ✓</div>'
+    : renderInvTable(unclassified, true);
+
+  // Classified
+  document.getElementById('classified-list').innerHTML = classified.length === 0
+    ? '<div class="hint">尚無已分類發票</div>'
+    : renderInvTable(classified, true);
+}
+
+function renderInvTable(invs, editable) {
   return `<div class="table-wrap"><table class="data-table">
-    <tr><th>發票號碼</th><th>日期</th><th>賣方</th><th>品名</th><th>金額</th><th>科目</th></tr>
-    ${invoices.map(inv => {
-      if (inv._error) return `<tr><td colspan="6"><span class="tag tag-err">❌ ${inv._error}</span></td></tr>`;
-      const items = (inv.items || []).map(i => i.name).join('、') || '-';
-      return `<tr>
-        <td>${inv.invoice_no || '-'}</td>
-        <td>${inv.date || '-'}</td>
-        <td>${inv.seller_name || '-'}</td>
-        <td>${items}</td>
-        <td style="text-align:right">$${(inv.total||0).toLocaleString()}</td>
-        <td><span class="tag tag-cat">${inv.category_suggest || '未分類'}</span></td>
-      </tr>`;
-    }).join('')}
+    <tr><th>發票號碼</th><th>日期</th><th>廠商</th><th>品名</th><th>金額</th><th>科目</th></tr>
+    ${invs.map(inv => `<tr>
+      <td>${inv.invoice_no || '-'}</td><td>${inv.date || '-'}</td>
+      <td>${inv.seller_name || '-'}</td><td>${inv.item || '-'}</td>
+      <td style="text-align:right">$${(inv.total || inv.amount || 0).toLocaleString()}</td>
+      <td>${editable ? catDropdown(inv) : `<span class="tag tag-cat">${inv.category || '未分類'}</span>`}</td>
+    </tr>`).join('')}
   </table></div>`;
 }
 
-// ===== Match (對帳) =====
+function catDropdown(inv) {
+  const cats = getCats();
+  const selected = inv.category || '';
+  return `<select onchange="updateCat('${inv.id}', this.value)" style="padding:4px;font-size:12px;border-radius:4px;border:1px solid #ddd;${selected ? '' : 'background:#fef9e7;'}">
+    <option value="">-- 選擇 --</option>
+    ${cats.map(c => `<option value="${c}" ${c === selected ? 'selected' : ''}>${c}</option>`).join('')}
+  </select>`;
+}
+
+function updateCat(id, cat) {
+  const inv = getInvoices();
+  const target = inv.find(i => String(i.id) === String(id));
+  if (target) {
+    target.category = cat;
+    learnRule(target.seller_name, target.item, cat);
+    saveInvoices(inv);
+    refreshClassify();
+    refreshOverview();
+  }
+}
+
+// ===== Match (三方對帳) =====
+function importOrders() {
+  const data = parseCSV(document.getElementById('csv-orders').value);
+  saveOrders(data);
+}
+function importBank() {
+  const data = parseCSV(document.getElementById('csv-bank').value);
+  saveBank(data);
+}
+
 function runMatch() {
   const invoices = getInvoices();
   const orders = getOrders();
+  const bank = getBank();
   const el = document.getElementById('match-output');
 
-  if (!invoices.length) { el.innerHTML = '<div class="status status-warn">沒有發票資料，請先匯入或辨識</div>'; return; }
-
-  // Detect duplicates
-  const noMap = {};
-  const dupes = [];
-  invoices.forEach((inv, i) => {
-    const no = inv.invoice_no;
-    if (noMap[no] !== undefined) dupes.push(no);
-    noMap[no] = i;
-  });
-
-  // Match with orders
-  const matched = [];
-  const unmatched_inv = [];
-  const unmatched_ord = [...orders];
-
-  invoices.forEach(inv => {
-    const taxId = inv.seller_tax_id;
-    const amt = inv.total || inv.subtotal || 0;
-    let bestIdx = -1, bestDiff = Infinity;
-    unmatched_ord.forEach((ord, oi) => {
-      if ((ord['供應商統編'] || ord['seller_tax_id']) === taxId) {
-        const ordAmt = parseFloat(ord['金額'] || ord['amount'] || 0);
-        const diff = Math.abs(amt - ordAmt);
-        if (diff < bestDiff) { bestDiff = diff; bestIdx = oi; }
-      }
-    });
-    if (bestIdx >= 0 && bestDiff <= amt * 0.05) {
-      const ord = unmatched_ord.splice(bestIdx, 1)[0];
-      matched.push({ inv, ord, diff: bestDiff });
-    } else {
-      unmatched_inv.push(inv);
-    }
-  });
-
-  // Stats
-  const statsEl = document.getElementById('match-stats');
-  statsEl.innerHTML = `
-    <div class="stat-card"><div class="stat-num">${invoices.length}</div><div class="stat-label">發票總數</div></div>
-    <div class="stat-card"><div class="stat-num">${matched.length}</div><div class="stat-label">已配對</div></div>
-    <div class="stat-card"><div class="stat-num" style="color:${unmatched_inv.length?'#b9770e':'#1e8449'}">${unmatched_inv.length}</div><div class="stat-label">未配對發票</div></div>
-    <div class="stat-card"><div class="stat-num" style="color:${dupes.length?'#922b21':'#1e8449'}">${dupes.length}</div><div class="stat-label">重複發票</div></div>
-  `;
+  if (!invoices.length) { el.innerHTML = '<div class="status status-warn">沒有發票，請先匯入</div>'; return; }
 
   let html = '';
-  if (dupes.length) {
-    html += `<div class="status status-err">⚠️ 發現重複發票：${dupes.join('、')}</div>`;
+
+  // Duplicate detection
+  const noCount = {};
+  invoices.forEach(i => { noCount[i.invoice_no] = (noCount[i.invoice_no] || 0) + 1; });
+  const dupes = Object.entries(noCount).filter(([_, c]) => c > 1).map(([n]) => n);
+  if (dupes.length) html += `<div class="status status-err">⚠️ 重複發票 ${dupes.length} 組：${dupes.join('、')}</div>`;
+
+  // Amount anomaly (>3x average)
+  const avg = invoices.reduce((s, i) => s + (i.total || 0), 0) / invoices.length;
+  const anomalies = invoices.filter(i => (i.total || 0) > avg * 3);
+  if (anomalies.length) html += `<div class="status status-warn">⚠️ 金額異常 ${anomalies.length} 筆（超過平均 $${Math.round(avg).toLocaleString()} 的 3 倍）</div>`;
+
+  // Invoice vs Orders
+  if (orders.length) {
+    const matched = [], unmatchedInv = [], unmatchedOrd = [...orders];
+    invoices.forEach(inv => {
+      const taxId = inv.seller_tax_id;
+      let bestIdx = -1, bestDiff = Infinity;
+      unmatchedOrd.forEach((ord, oi) => {
+        const ordTax = ord['廠商統編'] || ord['供應商統編'] || '';
+        if (ordTax === taxId && taxId) {
+          const ordAmt = parseFloat(ord['金額'] || 0);
+          const diff = Math.abs((inv.total || 0) - ordAmt);
+          if (diff < bestDiff) { bestDiff = diff; bestIdx = oi; }
+        }
+      });
+      if (bestIdx >= 0 && bestDiff <= (inv.total || 1) * 0.1) {
+        matched.push({ inv, ord: unmatchedOrd.splice(bestIdx, 1)[0], diff: bestDiff });
+      } else { unmatchedInv.push(inv); }
+    });
+
+    html += `<div class="section-title">發票 vs 訂單</div>
+      <div class="stats">
+        <div class="stat-card"><div class="stat-num">${matched.length}</div><div class="stat-label">✅ 已配對</div></div>
+        <div class="stat-card"><div class="stat-num" style="color:#b9770e">${unmatchedInv.length}</div><div class="stat-label">❓ 有發票無訂單</div></div>
+        <div class="stat-card"><div class="stat-num" style="color:#922b21">${unmatchedOrd.length}</div><div class="stat-label">❗ 有訂單無發票</div></div>
+      </div>`;
+
+    if (matched.filter(m => m.diff > 0).length) {
+      html += '<div class="table-wrap"><table class="data-table"><tr><th>發票</th><th>訂單</th><th>差額</th></tr>';
+      matched.filter(m => m.diff > 0).forEach(m => {
+        html += `<tr class="row-warn"><td>${m.inv.invoice_no}</td><td>${m.ord['訂單編號'] || '-'}</td><td>$${m.diff.toLocaleString()}</td></tr>`;
+      });
+      html += '</table></div>';
+    }
+  } else {
+    html += '<div class="status status-warn">尚未匯入訂單，跳過發票 vs 訂單比對</div>';
   }
-  if (orders.length === 0) {
-    html += '<div class="status status-warn">尚未匯入訂單，無法對帳。請到「匯入 CSV」載入訂單資料。</div>';
+
+  // Invoice vs Bank
+  if (bank.length) {
+    let bankMatched = 0;
+    const bankTotal = bank.reduce((s, b) => s + parseFloat(b['支出金額'] || 0), 0);
+    const invTotal = invoices.reduce((s, i) => s + (i.total || 0), 0);
+    const diff = Math.abs(invTotal - bankTotal);
+    invoices.forEach(inv => {
+      const amt = inv.total || 0;
+      if (bank.some(b => Math.abs(parseFloat(b['支出金額'] || 0) - amt) < 1)) bankMatched++;
+    });
+    html += `<div class="section-title">發票 vs 銀行帳單</div>
+      <div class="stats">
+        <div class="stat-card"><div class="stat-num">$${invTotal.toLocaleString()}</div><div class="stat-label">發票總額</div></div>
+        <div class="stat-card"><div class="stat-num">$${bankTotal.toLocaleString()}</div><div class="stat-label">銀行支出</div></div>
+        <div class="stat-card"><div class="stat-num" style="color:${diff > invTotal*0.05 ? '#922b21' : '#1e8449'}">$${diff.toLocaleString()}</div><div class="stat-label">差額</div></div>
+        <div class="stat-card"><div class="stat-num">${bankMatched}</div><div class="stat-label">金額配對筆數</div></div>
+      </div>`;
+  } else {
+    html += '<div class="status status-warn">尚未匯入銀行帳單，跳過銀行比對</div>';
   }
-  if (matched.length) {
-    html += '<h3 style="margin-top:16px; font-size:15px;">✅ 配對成功</h3>';
-    html += `<div class="table-wrap"><table class="data-table">
-      <tr><th>發票</th><th>訂單</th><th>金額差異</th><th>狀態</th></tr>
-      ${matched.map(m => `<tr>
-        <td>${m.inv.invoice_no}</td>
-        <td>${m.ord['訂單編號'] || m.ord['order_id'] || '-'}</td>
-        <td style="text-align:right">$${m.diff.toLocaleString()}</td>
-        <td>${m.diff === 0 ? '<span class="tag tag-ok">完全一致</span>' : '<span class="tag tag-warn">金額差異</span>'}</td>
-      </tr>`).join('')}
-    </table></div>`;
-  }
-  if (unmatched_inv.length) {
-    html += '<h3 style="margin-top:16px; font-size:15px;">❓ 未配對發票</h3>';
-    html += renderInvoiceTable(unmatched_inv);
-  }
+
   el.innerHTML = html;
+}
+
+// ===== Search =====
+function populateSearchCats() {
+  const sel = document.getElementById('search-cat');
+  const cats = getCats();
+  sel.innerHTML = '<option value="">全部科目</option>' + cats.map(c => `<option>${c}</option>`).join('');
+}
+
+function doSearch() {
+  const q = document.getElementById('search-q').value.trim().toLowerCase();
+  const cat = document.getElementById('search-cat').value;
+  const from = document.getElementById('search-from').value;
+  const to = document.getElementById('search-to').value;
+  let inv = getInvoices();
+  if (q) inv = inv.filter(i => (i.seller_name || '').toLowerCase().includes(q) || (i.item || '').toLowerCase().includes(q) || (i.invoice_no || '').toLowerCase().includes(q));
+  if (cat) inv = inv.filter(i => i.category === cat);
+  if (from) inv = inv.filter(i => (i.date || '') >= from);
+  if (to) inv = inv.filter(i => (i.date || '') <= to);
+  const total = inv.reduce((s, i) => s + (i.total || i.amount || 0), 0);
+  document.getElementById('search-output').innerHTML = `<div class="hint" style="margin-bottom:8px;">找到 ${inv.length} 筆，共 $${total.toLocaleString()}</div>` + renderInvTable(inv, false);
 }
 
 // ===== Report =====
 function genReport() {
-  const invoices = getInvoices();
+  const inv = getInvoices();
   const el = document.getElementById('report-output');
-  if (!invoices.length) { el.innerHTML = '<div class="status status-warn">沒有發票資料</div>'; return; }
+  if (!inv.length) { el.innerHTML = '<div class="status status-warn">沒有資料</div>'; return; }
 
-  // By category
+  const grandTotal = inv.reduce((s, i) => s + (i.total || 0), 0);
   const byCat = {};
-  let grandTotal = 0;
-  invoices.forEach(inv => {
-    const cat = inv.category_suggest || '未分類';
-    byCat[cat] = (byCat[cat] || 0) + (inv.total || inv.subtotal || 0);
-    grandTotal += (inv.total || inv.subtotal || 0);
-  });
+  inv.forEach(i => { const c = i.category || '未分類'; byCat[c] = (byCat[c] || 0) + (i.total || 0); });
   const sorted = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
   const maxVal = sorted[0]?.[1] || 1;
 
-  // By month
   const byMonth = {};
-  invoices.forEach(inv => {
-    const m = (inv.date || '').slice(0, 7) || '未知';
-    byMonth[m] = (byMonth[m] || 0) + (inv.total || inv.subtotal || 0);
-  });
+  inv.forEach(i => { const m = (i.date || '').slice(0, 7) || '未知'; byMonth[m] = (byMonth[m] || 0) + (i.total || 0); });
+
+  const bySeller = {};
+  inv.forEach(i => { const s = i.seller_name || '未知'; bySeller[s] = (bySeller[s] || 0) + (i.total || 0); });
+  const topSellers = Object.entries(bySeller).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const sellerMax = topSellers[0]?.[1] || 1;
 
   let html = `<div class="stats">
-    <div class="stat-card"><div class="stat-num">${invoices.length}</div><div class="stat-label">發票總數</div></div>
+    <div class="stat-card"><div class="stat-num">${inv.length}</div><div class="stat-label">發票筆數</div></div>
     <div class="stat-card"><div class="stat-num">$${grandTotal.toLocaleString()}</div><div class="stat-label">總金額</div></div>
     <div class="stat-card"><div class="stat-num">${Object.keys(byCat).length}</div><div class="stat-label">科目數</div></div>
+    <div class="stat-card"><div class="stat-num">${Object.keys(bySeller).length}</div><div class="stat-label">供應商數</div></div>
   </div>`;
 
-  html += '<h3 style="font-size:15px; margin:16px 0 8px;">各科目支出</h3>';
-  sorted.forEach(([cat, amt]) => {
-    const pct = (amt / grandTotal * 100).toFixed(1);
-    const width = (amt / maxVal * 100).toFixed(0);
-    html += `<div class="chart-bar">
-      <div class="chart-label">${cat}</div>
-      <div class="chart-fill" style="width:${width}%"></div>
-      <div class="chart-val">$${amt.toLocaleString()} (${pct}%)</div>
-    </div>`;
+  html += '<div class="section-title">各科目支出</div>';
+  sorted.forEach(([c, a]) => {
+    html += `<div class="chart-bar"><div class="chart-label">${c}</div><div class="chart-fill" style="width:${(a/maxVal*100).toFixed(0)}%"></div><div class="chart-val">$${a.toLocaleString()} (${(a/grandTotal*100).toFixed(1)}%)</div></div>`;
+  });
+
+  html += '<div class="section-title">Top 10 供應商</div>';
+  topSellers.forEach(([s, a]) => {
+    html += `<div class="chart-bar"><div class="chart-label">${s}</div><div class="chart-fill" style="width:${(a/sellerMax*100).toFixed(0)}%; background:#27ae60"></div><div class="chart-val">$${a.toLocaleString()}</div></div>`;
   });
 
   if (Object.keys(byMonth).length > 1) {
-    html += '<h3 style="font-size:15px; margin:16px 0 8px;">月度趨勢</h3>';
+    html += '<div class="section-title">月度趨勢</div>';
     const mSorted = Object.entries(byMonth).sort();
     const mMax = Math.max(...mSorted.map(m => m[1]));
-    mSorted.forEach(([m, amt]) => {
-      html += `<div class="chart-bar">
-        <div class="chart-label">${m}</div>
-        <div class="chart-fill" style="width:${(amt/mMax*100).toFixed(0)}%; background:#27ae60"></div>
-        <div class="chart-val">$${amt.toLocaleString()}</div>
-      </div>`;
+    mSorted.forEach(([m, a]) => {
+      html += `<div class="chart-bar"><div class="chart-label">${m}</div><div class="chart-fill" style="width:${(a/mMax*100).toFixed(0)}%; background:#8e44ad"></div><div class="chart-val">$${a.toLocaleString()}</div></div>`;
     });
   }
 
   // Anomalies
-  const avg = grandTotal / invoices.length;
-  const outliers = invoices.filter(inv => (inv.total || 0) > avg * 3);
+  const avg = grandTotal / inv.length;
+  const outliers = inv.filter(i => (i.total || 0) > avg * 3);
   if (outliers.length) {
-    html += '<h3 style="font-size:15px; margin:16px 0 8px;">⚠️ 金額異常（超過平均 3 倍）</h3>';
-    html += renderInvoiceTable(outliers);
+    html += `<div class="section-title">⚠️ 金額異常（&gt;3x 平均 $${Math.round(avg).toLocaleString()}）</div>`;
+    html += renderInvTable(outliers, false);
   }
 
   el.innerHTML = html;
 }
 
+// ===== Export =====
+function exportExcel() {
+  const inv = getInvoices();
+  if (!inv.length) return alert('沒有資料');
+  const header = '發票號碼,日期,廠商統編,廠商名稱,品名,金額,稅額,總計,科目,來源\n';
+  const rows = inv.map(i => [i.invoice_no, i.date, i.seller_tax_id, i.seller_name, i.item, i.amount, i.tax, i.total, i.category || '', i.source].join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + header + rows], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `發票_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+}
+function exportRules() {
+  const blob = new Blob([JSON.stringify(getRules(), null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '分類規則.json'; a.click();
+}
+function exportAll() {
+  const data = { invoices: getInvoices(), rules: getRules(), orders: getOrders(), bank: getBank(), cats: getCats() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `發票備份_${new Date().toISOString().slice(0,10)}.json`; a.click();
+}
+function clearAll() { ['invoices','rules','orders','bank'].forEach(k => localStorage.removeItem('inv2_' + k)); refreshOverview(); }
+
 // ===== Demo data =====
 function loadDemoInvoices() {
   const sellers = [
-    ['12345678','大同文具行'],['23456789','三和五金'],['34567890','正大清潔'],
-    ['45678901','聯強電腦'],['56789012','金車物流'],['67890123','中華電信'],
-    ['78901234','富邦產險'],['89012345','大成印刷'],['90123456','鼎泰豐'],
-    ['11223344','台灣水泥'],['22334455','光華電子'],['33445566','永和豆漿設備'],
+    ['12345678','大同文具行'],['23456789','三和五金'],['34567890','正大清潔'],['45678901','聯強電腦'],
+    ['56789012','金車物流'],['67890123','中華電信'],['78901234','富邦產險'],['89012345','大成印刷'],
+    ['90123456','好味餐飲'],['11223344','台灣水泥'],['22334455','光華電子'],['33445566','永和設備'],
   ];
   const items = [
-    ['A4影印紙','辦公用品',120,5],['碳粉匣','辦公用品',1800,1],['便利貼','辦公用品',45,10],
-    ['六角螺絲M8','維修材料',3,100],['PVC水管','維修材料',85,20],['砂紙120號','維修材料',15,30],
-    ['清潔劑','清潔用品',180,5],['垃圾袋','清潔用品',60,10],['衛生紙','清潔用品',350,2],
-    ['網路月費','電信費',899,1],['市話月費','電信費',350,1],
-    ['宅配運費','運費',150,3],['貨運費','運費',2500,1],
-    ['產物保險','保險費',12000,1],
-    ['名片印刷','廣告行銷',800,1],['DM海報','廣告行銷',3500,1],
-    ['聚餐','餐飲交際',2400,1],['咖啡豆','餐飲交際',450,3],
-    ['SSD硬碟','資訊設備',2800,1],['無線滑鼠','資訊設備',590,2],['螢幕','資訊設備',7500,1],
-    ['影印紙','辦公用品',95,10],['釘書針','辦公用品',25,5],
-    ['焊條','維修材料',120,10],['軸承','維修材料',350,4],
+    ['A4影印紙',120,5],['碳粉匣',1800,1],['便利貼',45,10],['釘書針',25,5],
+    ['六角螺絲M8',3,100],['PVC水管',85,20],['砂紙120號',15,30],['焊條',120,10],
+    ['清潔劑',180,5],['垃圾袋',60,10],['衛生紙',350,2],
+    ['網路月費',899,1],['市話月費',350,1],
+    ['宅配運費',150,3],['貨運費',2500,1],
+    ['產物保險',12000,1],['名片印刷',800,1],['DM海報',3500,1],
+    ['聚餐',2400,1],['咖啡豆',450,3],
+    ['SSD硬碟',2800,1],['無線滑鼠',590,2],['螢幕',7500,1],['軸承',350,4],
   ];
-
-  const rows = ['發票號碼,日期,賣方統編,賣方名稱,品名,數量,單價,金額,稅額'];
-  for (let i = 0; i < 50; i++) {
+  const rows = ['發票號碼,日期,廠商統編,廠商名稱,品名,數量,單價,金額,稅額'];
+  for (let i = 0; i < 80; i++) {
     const s = sellers[Math.floor(Math.random()*sellers.length)];
     const it = items[Math.floor(Math.random()*items.length)];
-    const d = `2026-0${Math.ceil(Math.random()*3)}-${String(Math.ceil(Math.random()*28)).padStart(2,'0')}`;
+    const month = Math.ceil(Math.random()*3);
+    const day = String(Math.ceil(Math.random()*28)).padStart(2,'0');
     const pfx = String.fromCharCode(65+Math.floor(Math.random()*26)) + String.fromCharCode(65+Math.floor(Math.random()*26));
     const no = pfx + String(10000000+Math.floor(Math.random()*89999999));
-    const amt = it[2]*it[3];
-    const tax = Math.round(amt*0.05);
-    rows.push(`${no},${d},${s[0]},${s[1]},${it[0]},${it[3]},${it[2]},${amt},${tax}`);
+    const amt = it[1]*it[2];
+    rows.push(`${no},2026-0${month}-${day},${s[0]},${s[1]},${it[0]},${it[2]},${it[1]},${amt},${Math.round(amt*0.05)}`);
   }
-  // Add one duplicate for demo
-  rows.push(rows[1]);
+  rows.push(rows[1]); // duplicate for demo
   document.getElementById('csv-invoices').value = rows.join('\n');
 }
 
 function loadDemoOrders() {
-  const rows = ['訂單編號,供應商統編,品名,金額,日期'];
-  const invoices = getInvoices();
-  invoices.slice(0, 30).forEach((inv, i) => {
-    const ordAmt = (inv.total||0) + (Math.random() > 0.8 ? Math.round(Math.random()*100-50) : 0);
-    rows.push(`PO-${String(i+1).padStart(3,'0')},${inv.seller_tax_id||''},${(inv.items||[{}])[0]?.name||''},${ordAmt},${inv.date||''}`);
+  const inv = getInvoices();
+  if (!inv.length) { alert('請先匯入發票再產生訂單'); return; }
+  const rows = ['訂單編號,廠商統編,品名,金額,日期'];
+  inv.slice(0, 50).forEach((i, idx) => {
+    const jitter = Math.random() > 0.85 ? Math.round(Math.random()*200 - 100) : 0;
+    rows.push(`PO-${String(idx+1).padStart(3,'0')},${i.seller_tax_id||''},${i.item||''},${(i.total||0)+jitter},${i.date||''}`);
   });
   document.getElementById('csv-orders').value = rows.join('\n');
-  // Parse and save
-  const lines = rows.map(l => l.split(','));
-  const header = lines[0];
-  const data = lines.slice(1).map(row => { const o = {}; header.forEach((h,i) => o[h] = row[i]||''); return o; });
-  saveOrders(data);
+  importOrders();
 }
 
-// ===== Import orders from textarea =====
-document.getElementById('csv-orders')?.addEventListener('change', function() {
-  const raw = this.value.trim();
-  if (!raw) return;
-  const lines = raw.split('\n').map(l => l.split(',').map(s => s.trim()));
-  if (lines.length < 2) return;
-  const header = lines[0];
-  const data = lines.slice(1).map(row => { const o = {}; header.forEach((h,i) => o[h] = row[i]||''); return o; });
-  saveOrders(data);
-});
+function loadDemoBank() {
+  const inv = getInvoices();
+  if (!inv.length) { alert('請先匯入發票再產生帳單'); return; }
+  const rows = ['日期,摘要,支出金額,餘額'];
+  let balance = 500000;
+  inv.slice(0, 60).sort((a,b) => (a.date||'').localeCompare(b.date||'')).forEach(i => {
+    balance -= (i.total || 0);
+    rows.push(`${i.date||''},付${i.seller_name||''},${i.total||0},${balance}`);
+  });
+  document.getElementById('csv-bank').value = rows.join('\n');
+  importBank();
+}
 </script>
 </body>
 </html>
