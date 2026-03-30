@@ -161,7 +161,7 @@ solve-tw/
 
 ## 聯絡
 
-- 發起人：陳重光（元智大學）
+- 發起人：[cooperation.tw](https://cooperation.tw)
 - 問題回報：[Issues](../../issues)
 - 合作洽談：[Discussions](../../discussions)
 
