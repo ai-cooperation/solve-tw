@@ -528,15 +528,17 @@ ${topCards}
 async function loadDemoData() {
   if (getCards().length > 0 && !confirm('會覆蓋現有資料，確定？')) return;
   try {
-    const r = await fetch('cards-with-vectors.json');
+    // Try relative path first, then absolute GitHub Pages path
+    let r = await fetch('cards-with-vectors.json');
+    if (!r.ok) r = await fetch(window.location.href.replace('index.html','').replace(/\/$/,'') + '/cards-with-vectors.json');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     const data = await r.json();
     saveCards(data.cards);
-    // Build vocab/idf maps for search
     buildSearchIndex(data.cards);
-    alert(`已載入 ${data.cards.length} 筆知識卡片 ✅\n（含預算 TF-IDF 向量，搜尋瞬間完成）`);
+    alert(`已載入 ${data.cards.length} 筆知識卡片 ✅\n含預算 TF-IDF 向量，查詢瞬間完成`);
     return;
   } catch(e) {
-    console.warn('無法載入 JSON，使用內建資料', e);
+    console.warn('無法載入 JSON，使用內建備用資料', e);
   }
   // Fallback: inline minimal demo
   const demo = [
@@ -632,7 +634,7 @@ if (existingCards.length > 0 && existingCards[0].vec) {
 
 // Add demo button if empty
 if (getCards().length === 0) {
-  document.getElementById('card-list').innerHTML += '<button class="btn btn-primary" style="margin-top:12px" onclick="loadDemoData()">📦 載入 10 筆範例資料（塑膠射出成型）</button>';
+  document.getElementById('card-list').innerHTML += '<button class="btn btn-primary" style="margin-top:12px" onclick="loadDemoData()">📦 載入 100 筆範例資料（塑膠射出成型）</button>';
 }
 </script>
 </body>
