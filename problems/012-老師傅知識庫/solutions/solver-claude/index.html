@@ -233,8 +233,8 @@ function renderCards() {
   el.innerHTML = cards.map((c, i) => cardHTML(c, i)).join('');
 }
 function cardHTML(c, idx) {
-  return `<div class="card">
-    <div class="card-meta">${c.master} ・ ${c.category} ・ ${c.created}</div>
+  return `<div class="card" id="card-${idx+1}">
+    <div class="card-meta">#${idx+1} ・ ${c.master} ・ ${c.category} ・ ${c.created}</div>
     <h3>${c.title}</h3>
     <div class="card-section"><strong>🔍 問題</strong><p>${c.problem}</p></div>
     <div class="card-section"><strong>✅ 解法</strong><p>${c.solution}</p></div>
@@ -516,9 +516,13 @@ ${topCards}
 先直接回答問題（2-3 段），最後一行標記「📌 來源：卡片 X — XXX師傅」`;
 
   try {
-    const result = await callAI(prompt);
+    let result = await callAI(prompt);
+    // 把「卡片XX」變成可點擊連結，點擊後跳到該卡片
+    const linked = result.replace(/\n/g, '<br>').replace(/卡片\s*(\d+)/g, (m, n) =>
+      `<a href="#card-${n}" style="color:#e67e22;text-decoration:underline;cursor:pointer" onclick="document.querySelectorAll('.mode-btn')[0].click();setTimeout(()=>{const el=document.getElementById('card-${n}');if(el){el.scrollIntoView({behavior:'smooth'});el.style.boxShadow='0 0 0 3px #e67e22';setTimeout(()=>el.style.boxShadow='',2000);}},100)">卡片${n}</a>`
+    );
     el.innerHTML = `<div class="hint" style="margin-bottom:8px">🔍 向量比對命中：${matchInfo}</div>
-      <div class="answer-card"><h3>💡 師傅們的經驗</h3>${result.replace(/\n/g, '<br>')}</div>
+      <div class="answer-card"><h3>💡 師傅們的經驗</h3>${linked}</div>
       <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="document.getElementById('ask-input').value='';document.getElementById('ask-output').innerHTML=''">清除</button>`;
   } catch(e) {
     el.innerHTML = `<div class="status status-err">❌ ${e.message}</div>`;
