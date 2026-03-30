@@ -556,12 +556,18 @@ function runMatch() {
   const noCount = {};
   invoices.forEach(i => { noCount[i.invoice_no] = (noCount[i.invoice_no] || 0) + 1; });
   const dupes = Object.entries(noCount).filter(([_, c]) => c > 1).map(([n]) => n);
-  if (dupes.length) html += `<div class="status status-err">⚠️ 重複發票 ${dupes.length} 組：${dupes.join('、')}</div>`;
+  if (dupes.length) {
+    const dupeInvs = invoices.filter(i => dupes.includes(i.invoice_no));
+    html += `<details class="status status-err" open><summary style="cursor:pointer">⚠️ 重複發票 ${dupes.length} 組：${dupes.join('、')}</summary>` + renderInvTable(dupeInvs, false) + '</details>';
+  }
 
   // Amount anomaly (>3x average)
   const avg = invoices.reduce((s, i) => s + (i.total || 0), 0) / invoices.length;
   const anomalies = invoices.filter(i => (i.total || 0) > avg * 3);
-  if (anomalies.length) html += `<div class="status status-warn">⚠️ 金額異常 ${anomalies.length} 筆（超過平均 $${Math.round(avg).toLocaleString()} 的 3 倍）</div>`;
+  if (anomalies.length) {
+    const anomalyNos = anomalies.map(a => a.invoice_no).join('、');
+    html += `<details class="status status-warn" open><summary style="cursor:pointer">⚠️ 金額異常 ${anomalies.length} 筆（超過平均 $${Math.round(avg).toLocaleString()} 的 3 倍）：${anomalyNos}</summary>` + renderInvTable(anomalies, false) + '</details>';
+  }
 
   // Invoice vs Orders
   if (orders.length) {
