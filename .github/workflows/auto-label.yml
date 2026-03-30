@@ -1,0 +1,74 @@
+name: Auto Label Issues
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto label problem issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const body = issue.body || '';
+            const title = issue.title || '';
+            const labels = [];
+
+            // Problem issues
+            if (title.startsWith('[Problem]')) {
+              labels.push('problem', 'status: open');
+
+              // Difficulty
+              if (body.includes('⭐⭐⭐⭐')) labels.push('difficulty: expert');
+              else if (body.includes('⭐⭐⭐')) labels.push('difficulty: advanced');
+              else if (body.includes('⭐⭐')) labels.push('difficulty: intermediate');
+              else if (body.includes('⭐')) labels.push('difficulty: beginner');
+
+              // Type
+              if (body.includes('Quick Fix')) labels.push('type: quick-fix');
+              else if (body.includes('Sprint')) labels.push('type: sprint');
+              else if (body.includes('Project')) labels.push('type: project');
+              else if (body.includes('Capstone')) labels.push('type: capstone');
+
+              // Industry
+              const industries = {
+                '製造業': 'industry: manufacturing',
+                '零售': 'industry: retail',
+                '服務業': 'industry: retail',
+                '醫療': 'industry: healthcare',
+                '農業': 'industry: agriculture',
+                '教育': 'industry: education',
+                '金融': 'industry: finance',
+                '社會創新': 'industry: social-innovation',
+                'NPO': 'industry: social-innovation',
+                '通用': 'industry: general',
+                '跨產業': 'industry: general'
+              };
+
+              for (const [keyword, label] of Object.entries(industries)) {
+                if (body.includes(keyword)) {
+                  labels.push(label);
+                  break;
+                }
+              }
+            }
+
+            // Application issues
+            if (title.startsWith('[Apply]')) {
+              labels.push('application');
+            }
+
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: labels
+              });
+            }

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "\U0001F4AC 一般討論 / Discussion"
+    url: https://github.com/ai-cooperation/solve-tw/discussions
+    about: "一般問題、建議、交流請到 Discussions"
+  - name: "\U0001F4D6 文件 / Documentation"
+    url: https://github.com/ai-cooperation/solve-tw/tree/main/docs
+    about: "查看指南和規則"

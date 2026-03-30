@@ -1,0 +1,71 @@
+name: "\U0001F64B 報名解題 / Apply to Solve"
+description: "報名參與某個題目的解題"
+title: "[Apply] #題目編號 - "
+labels: ["application"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 報名解題
+
+        請在標題中填入題目編號（例如：`[Apply] #12 - 小明`）
+
+  - type: input
+    id: problem_number
+    attributes:
+      label: "題目編號"
+      description: "你要報名哪一題？填入 Issue 編號"
+      placeholder: "例：#12"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: team_size
+    attributes:
+      label: "個人或團隊"
+      options:
+        - "個人"
+        - "2 人組"
+        - "3-5 人團隊"
+    validations:
+      required: true
+
+  - type: input
+    id: team_members
+    attributes:
+      label: "團隊成員 GitHub 帳號（選填）"
+      placeholder: "例：@alice, @bob"
+    validations:
+      required: false
+
+  - type: textarea
+    id: approach_sketch
+    attributes:
+      label: "初步想法（簡述）"
+      description: "你打算怎麼解這個問題？不需要很詳細，幾句話就好。"
+      placeholder: |
+        我打算用 Claude + Python 建一個自動分類 pipeline，
+        先用 few-shot prompting 做初版，再用測試資料調整...
+    validations:
+      required: true
+
+  - type: textarea
+    id: relevant_skills
+    attributes:
+      label: "你的相關技能/經驗"
+      description: "你有什麼相關的技能或經驗？誠實就好。"
+      placeholder: |
+        - Python 基礎（上過一學期課）
+        - 熟悉 Claude / ChatGPT
+        - 做過一個 Line Bot 小專案
+    validations:
+      required: true
+
+  - type: input
+    id: estimated_time
+    attributes:
+      label: "預計完成時間"
+      description: "你預計多久可以提交解法？"
+      placeholder: "例：2 週"
+    validations:
+      required: true

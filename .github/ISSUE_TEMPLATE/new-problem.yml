@@ -1,0 +1,196 @@
+name: "\U0001F4CB 企業出題 / Submit a Problem"
+description: "企業或組織提交一個真實問題，讓解題者來挑戰"
+title: "[Problem] "
+labels: ["problem", "status: open"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 出題指南
+
+        感謝您願意出題！請盡量具體描述您的問題。
+        好的題目有明確的目標、可衡量的驗收標準，以及足夠的背景資訊。
+
+        **預計填寫時間：20-30 分鐘**
+
+        > 提示：您不需要提供商業機密。請將問題「抽象化」到可以公開討論的程度。
+
+  - type: input
+    id: company
+    attributes:
+      label: "出題組織（選填）"
+      description: "您的公司/組織名稱。不填則顯示為「匿名企業」"
+      placeholder: "例：某科技公司 / ABC Manufacturing / 不公開"
+    validations:
+      required: false
+
+  - type: input
+    id: contact_role
+    attributes:
+      label: "出題者職稱"
+      description: "幫助解題者了解題目的商業背景"
+      placeholder: "例：技術部門主管 / 營運經理 / 創辦人"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: industry
+    attributes:
+      label: "產業類別"
+      options:
+        - "\U0001F3ED 製造業"
+        - "\U0001F6D2 零售/服務業"
+        - "\U0001F3E5 醫療健康"
+        - "\U0001F33E 農業"
+        - "\U0001F393 教育"
+        - "\U0001F3E6 金融"
+        - "\U0001F331 社會創新/NPO"
+        - "\U0001F527 通用/跨產業"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: difficulty
+    attributes:
+      label: "建議難度"
+      description: "您認為這個問題需要什麼程度的技能？"
+      options:
+        - "⭐ Beginner — Prompt 設計、基本工具操作"
+        - "⭐⭐ Intermediate — 多工具串接、數據分析"
+        - "⭐⭐⭐ Advanced — API 整合、系統設計"
+        - "⭐⭐⭐⭐ Expert — 架構設計、產品化"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: "題目類型"
+      options:
+        - "⚡ Quick Fix（1-3 天）"
+        - "\U0001F3C3 Sprint（1-2 週）"
+        - "\U0001F4CB Project（1-3 月）"
+        - "\U0001F393 Capstone（一學期）"
+    validations:
+      required: true
+
+  - type: textarea
+    id: background
+    attributes:
+      label: "問題背景"
+      description: "這個問題的來龍去脈是什麼？為什麼它困擾著您？"
+      placeholder: |
+        例：我們是一間中型製造廠，每月處理約 500 張客訴單。目前全靠人工分類，
+        每張需要 10 分鐘。分類錯誤率約 15%，導致後續處理延遲...
+    validations:
+      required: true
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: "期望目標"
+      description: "您希望解題者幫您達成什麼？請盡量具體。"
+      placeholder: |
+        例：
+        1. 設計一個 AI 輔助的客訴分類系統
+        2. 能將客訴自動分為 5 個類別
+        3. 準確率 > 85%
+        4. 每張處理時間 < 1 分鐘
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: "驗收標準（至少 3 項）"
+      description: "怎樣算是「做好了」？請列出可量化的標準。"
+      placeholder: |
+        1. [ ] 能接收文字輸入並輸出分類結果
+        2. [ ] 測試資料集上準確率 ≥ 85%
+        3. [ ] 有清楚的使用說明文件
+        4. [ ] 提供 Demo 或可執行的原型
+    validations:
+      required: true
+
+  - type: textarea
+    id: constraints
+    attributes:
+      label: "限制條件"
+      description: "有什麼限制是解題者需要知道的？例如：預算為零、不能用付費 API、需要在特定環境運行等"
+      placeholder: |
+        例：
+        - 不能使用付費 API（學生沒預算）
+        - 必須能在一般筆電上運行
+        - 資料格式為 CSV
+    validations:
+      required: false
+
+  - type: textarea
+    id: dataset
+    attributes:
+      label: "可提供的資料（選填）"
+      description: "您能提供什麼資料幫助解題？請注意：所有資料必須脫敏（去除個資、商業機密）"
+      placeholder: |
+        例：
+        - 可提供 100 筆脫敏客訴文字範例（CSV 格式）
+        - 已有的分類標準說明文件
+        - 現有流程的簡易流程圖
+    validations:
+      required: false
+
+  - type: input
+    id: skills
+    attributes:
+      label: "所需技能標籤（以逗號分隔）"
+      description: "解題者可能需要的技能"
+      placeholder: "例：Prompt Engineering, Python, 資料分析, Chatbot"
+    validations:
+      required: true
+
+  - type: input
+    id: deadline
+    attributes:
+      label: "截止日期"
+      description: "解題者需要在什麼時候之前提交？"
+      placeholder: "例：2026-06-30"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reward
+    attributes:
+      label: "獎勵（選填）"
+      description: "是否有獎金、禮品、實習機會、推薦信等？完全選填，沒有也可以。"
+      placeholder: |
+        例：
+        - 最佳解法：推薦信一封
+        - 前三名：公司參訪 + 午餐會
+        - 被採用的解法：NT$5,000 獎金
+    validations:
+      required: false
+
+  - type: dropdown
+    id: review_commitment
+    attributes:
+      label: "Review 承諾"
+      description: "您願意花多少時間 Review 解法？這會影響解題者的參與意願。"
+      options:
+        - "30 分鐘 — 快速評分 + 簡短評語"
+        - "1 小時 — 詳細評語 + 改進建議"
+        - "2+ 小時 — 深度 Review + 面對面討論"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: "確認事項"
+      options:
+        - label: "我理解解法將以開源方式公開（MIT / CC BY-SA）"
+          required: true
+        - label: "我提供的資料已完成脫敏，不含個資或商業機密"
+          required: true
+        - label: "這個題目有教育價值，不是要求學生做免費勞動"
+          required: true
+        - label: "我承諾在截止日後 14 天內完成 Review"
+          required: true
