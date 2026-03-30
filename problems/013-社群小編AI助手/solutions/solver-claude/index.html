@@ -116,6 +116,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #f0c040
   <label>API Key <span id="key-optional" style="display:none; color:#888; font-weight:normal">（GemGate 不需要填）</span></label>
   <input type="password" id="api-key" placeholder="貼上你的 API Key">
   <div class="hint" id="key-hint">Gemini：到 aistudio.google.com 免費申請</div>
+  <div class="hint" style="color:#2e7d32">🔒 Key 只存在你的瀏覽器記憶體，關閉頁面即消失，不會上傳或儲存到任何伺服器</div>
 
   <div id="gemgate-config" style="display:none">
     <label>GemGate 網址</label>
@@ -288,7 +289,7 @@ function loadSaved() {
     if (v && el) el.value = v;
   });
   // Show gemgate config if previously selected
-  if (localStorage.getItem('solvetw_ai-provider') === 'gemgate') {
+  if (sessionStorage.getItem('solvetw_ai-provider') === 'gemgate') {
     document.getElementById('gemgate-config').style.display = 'block';
     document.getElementById('key-optional').style.display = 'inline';
   }
@@ -361,8 +362,8 @@ async function testKey() {
       if (r.ok) el.innerHTML = '<div class="status status-ok">✅ OpenAI 連線成功！</div>';
       else throw new Error('Key 無效');
     }
-    localStorage.setItem('solvetw_api-key', key);
-    localStorage.setItem('solvetw_ai-provider', provider);
+    sessionStorage.setItem('solvetw_api-key', key);
+    sessionStorage.setItem('solvetw_ai-provider', provider);
   } catch(e) {
     el.innerHTML = '<div class="status status-err">❌ 連線失敗：' + e.message + '</div>';
   }
@@ -370,8 +371,8 @@ async function testKey() {
 
 // ===== AI Call =====
 async function callAI(prompt) {
-  const key = localStorage.getItem('solvetw_api-key');
-  const provider = localStorage.getItem('solvetw_ai-provider') || 'gemini';
+  const key = sessionStorage.getItem('solvetw_api-key');
+  const provider = sessionStorage.getItem('solvetw_ai-provider') || 'gemini';
 
   if (provider === 'gemgate') {
     const url = (localStorage.getItem('solvetw_gemgate-url') || 'http://43.159.131.124:8760').replace(/\/+$/, '');
