@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一人小編 AI 助手</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, 'Noto Sans TC', sans-serif; background: #fafafa; color: #333; font-size: 16px; }
+
+/* Header */
+.header { background: #fff; border-bottom: 2px solid #f0c040; padding: 12px 16px; text-align: center; }
+.header h1 { font-size: 20px; }
+.header small { color: #888; font-size: 13px; }
+
+/* Tabs */
+.tabs { display: flex; background: #fff; border-bottom: 1px solid #eee; overflow-x: auto; }
+.tab { flex: 1; min-width: 70px; padding: 12px 8px; text-align: center; cursor: pointer; border-bottom: 3px solid transparent; font-size: 13px; transition: all .2s; }
+.tab.active { border-bottom-color: #f0c040; background: #fffbf0; font-weight: bold; }
+.tab:hover { background: #fffbf0; }
+.tab-icon { font-size: 20px; display: block; margin-bottom: 2px; }
+
+/* Content */
+.content { max-width: 600px; margin: 0 auto; padding: 16px; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* Form elements */
+label { display: block; font-weight: bold; margin: 16px 0 6px; font-size: 14px; }
+input, textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; font-family: inherit; }
+textarea { min-height: 80px; resize: vertical; }
+input:focus, textarea:focus, select:focus { outline: none; border-color: #f0c040; box-shadow: 0 0 0 3px rgba(240,192,64,.2); }
+.hint { font-size: 13px; color: #999; margin-top: 4px; }
+
+/* Buttons */
+.btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 16px; transition: all .2s; }
+.btn-primary { background: #f0c040; color: #333; }
+.btn-primary:hover { background: #e0b030; }
+.btn-secondary { background: #eee; color: #555; }
+.btn-copy { background: #333; color: #fff; }
+.btn-copy:hover { background: #555; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Output card */
+.output-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 16px; margin-top: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.05); white-space: pre-wrap; line-height: 1.7; font-size: 15px; }
+.output-card.empty { color: #bbb; text-align: center; padding: 40px; }
+.btn-row { display: flex; gap: 8px; margin-top: 12px; }
+.btn-row .btn { flex: 1; margin-top: 0; }
+
+/* Status */
+.status { padding: 10px 16px; border-radius: 8px; margin-top: 12px; font-size: 14px; }
+.status-ok { background: #e8f5e9; color: #2e7d32; }
+.status-warn { background: #fff8e1; color: #f57f17; }
+.status-err { background: #fce4ec; color: #c62828; }
+
+/* Loading */
+.loading { text-align: center; padding: 30px; color: #999; }
+.loading::after { content: ''; display: inline-block; width: 20px; height: 20px; border: 3px solid #ddd; border-top-color: #f0c040; border-radius: 50%; animation: spin 1s linear infinite; margin-left: 8px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Onboarding */
+.onboard { background: #fffbf0; border: 2px solid #f0c040; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+.onboard h2 { font-size: 18px; margin-bottom: 12px; }
+.step-num { display: inline-block; width: 28px; height: 28px; background: #f0c040; color: #333; border-radius: 50%; text-align: center; line-height: 28px; font-weight: bold; font-size: 14px; margin-right: 8px; }
+
+/* Stars */
+.stars { display: flex; gap: 4px; margin: 8px 0; }
+.star { font-size: 28px; cursor: pointer; color: #ddd; transition: color .2s; }
+.star.active { color: #f0c040; }
+
+/* Select style */
+.style-cards { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+.style-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 16px; }
+.style-card h4 { margin-bottom: 8px; }
+
+/* Saved badge */
+.saved-badge { display: inline-block; background: #e8f5e9; color: #2e7d32; padding: 4px 12px; border-radius: 20px; font-size: 13px; margin-left: 8px; }
+
+@media (max-width: 400px) { .tab { font-size: 11px; padding: 10px 4px; } .tab-icon { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🍳 一人小編 AI 助手</h1>
+  <small>社群內容 3 分鐘搞定 ｜ cooperation.tw</small>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="brand"><span class="tab-icon">⚙️</span>品牌設定</div>
+  <div class="tab" data-tab="calendar"><span class="tab-icon">📅</span>月排程</div>
+  <div class="tab" data-tab="post"><span class="tab-icon">✏️</span>今日文案</div>
+  <div class="tab" data-tab="review"><span class="tab-icon">⭐</span>負評回覆</div>
+  <div class="tab" data-tab="line"><span class="tab-icon">📱</span>LINE</div>
+</div>
+
+<div class="content">
+
+<!-- ===== 品牌設定 ===== -->
+<div class="panel active" id="panel-brand">
+  <div class="onboard" id="onboard-msg" style="display:none">
+    <h2>👋 第一次用？先做兩件事</h2>
+    <p><span class="step-num">1</span> 下面填 API Key（免費的 Gemini 就行）</p>
+    <p style="margin-top:8px"><span class="step-num">2</span> 填品牌資料 → 儲存</p>
+    <p style="margin-top:8px; color:#888">做完這兩步，之後每天 3 分鐘就能搞定社群。</p>
+  </div>
+
+  <label>AI 服務</label>
+  <select id="ai-provider">
+    <option value="gemini">Google Gemini（免費）</option>
+    <option value="openai">OpenAI</option>
+  </select>
+  <div class="hint">建議用 Gemini，免費額度夠用</div>
+
+  <label>API Key</label>
+  <input type="password" id="api-key" placeholder="貼上你的 API Key">
+  <div class="hint">Gemini：到 aistudio.google.com 免費申請</div>
+  <button class="btn btn-secondary" onclick="testKey()">測試連線</button>
+  <div id="key-status"></div>
+
+  <hr style="margin:24px 0; border:none; border-top:1px solid #eee">
+
+  <h3>品牌資料 <span class="saved-badge" id="dna-saved" style="display:none">已儲存 ✓</span></h3>
+  <div class="hint" style="margin-bottom:8px">填一次，之後所有功能自動帶入你的風格</div>
+
+  <label>店名 / 公司名</label>
+  <input type="text" id="brand-name" placeholder="例：晨光早午餐">
+
+  <label>做什麼的？開幾年了？</label>
+  <textarea id="brand-desc" placeholder="例：桃園連鎖早餐店，8 家分店，12 年了"></textarea>
+
+  <label>客人主要是誰？</label>
+  <textarea id="brand-audience" placeholder="例：上班族 7-9 點、媽媽帶小孩 9-11 點、假日年輕人"></textarea>
+
+  <label>品牌個性</label>
+  <select id="brand-personality">
+    <option value="鄰居阿姨——親切、會記得你、偶爾碎碎念">🏠 鄰居阿姨</option>
+    <option value="你的好朋友——輕鬆、有梗、會開玩笑">😄 好朋友</option>
+    <option value="專業顧問——可靠、有料、講話有根據">💼 專業顧問</option>
+    <option value="文青設計師——簡約、有質感、少即是多">🎨 文青風</option>
+    <option value="熱血教練——積極、激勵、充滿能量">🔥 熱血派</option>
+    <option value="custom">✍️ 自訂...</option>
+  </select>
+  <textarea id="brand-personality-custom" style="display:none" placeholder="用 2-3 句話形容你的品牌個性"></textarea>
+
+  <label>講話風格範例（貼 1-2 則你之前寫過的貼文）</label>
+  <textarea id="brand-samples" placeholder="例：「下雨天生意差，但蛋餅不會因為下雨就不好吃」"></textarea>
+
+  <label>絕對不要的風格</label>
+  <textarea id="brand-avoid" placeholder="例：不要太正式、不要說「快來搶購」、不要用英文"></textarea>
+
+  <label>主力商品 / 服務</label>
+  <textarea id="brand-products" placeholder="例：蛋餅、吐司、漢堡、蘿蔔糕、豆漿紅茶"></textarea>
+
+  <button class="btn btn-primary" onclick="saveBrand()">💾 儲存品牌資料</button>
+</div>
+
+<!-- ===== 月排程 ===== -->
+<div class="panel" id="panel-calendar">
+  <label>規劃哪個月</label>
+  <input type="month" id="cal-month">
+
+  <label>這個月有什麼重要的事？</label>
+  <textarea id="cal-events" placeholder="例：7/7 七夕、7/15 新品上市、暑假開始、天氣很熱"></textarea>
+
+  <button class="btn btn-primary" onclick="generate('calendar')">📅 產生整月排程</button>
+  <div id="output-calendar"></div>
+</div>
+
+<!-- ===== 今日文案 ===== -->
+<div class="panel" id="panel-post">
+  <label>今天的主題</label>
+  <input type="text" id="post-topic" placeholder="例：起司蛋餅特寫 / 週一打氣 / 新品上市">
+
+  <label>照片描述</label>
+  <textarea id="post-photo" placeholder="例：起司蛋餅切開，起司正在牽絲，旁邊一杯冰紅茶"></textarea>
+
+  <label>想強調什麼（選填）</label>
+  <input type="text" id="post-focus" placeholder="例：手工製作 / 限量 / 純粹分享">
+
+  <label>今天是</label>
+  <input type="text" id="post-day" placeholder="例：星期一、下雨天">
+
+  <button class="btn btn-primary" onclick="generate('post')">✏️ 產生文案</button>
+  <div id="output-post"></div>
+</div>
+
+<!-- ===== 負評回覆 ===== -->
+<div class="panel" id="panel-review">
+  <label>客人的評論</label>
+  <textarea id="review-text" placeholder="把客人寫的評論貼在這裡" style="min-height:100px"></textarea>
+
+  <label>評分</label>
+  <div class="stars" id="review-stars">
+    <span class="star" data-v="1">★</span>
+    <span class="star" data-v="2">★</span>
+    <span class="star" data-v="3">★</span>
+    <span class="star" data-v="4">★</span>
+    <span class="star" data-v="5">★</span>
+  </div>
+
+  <label>哪家分店（選填）</label>
+  <input type="text" id="review-branch" placeholder="例：中壢環北店">
+
+  <button class="btn btn-primary" onclick="generate('review')">⭐ 產生回覆</button>
+  <div id="output-review"></div>
+</div>
+
+<!-- ===== LINE 推播 ===== -->
+<div class="panel" id="panel-line">
+  <label>活動主題</label>
+  <input type="text" id="line-topic" placeholder="例：泡菜起司蛋餅新品上市">
+
+  <label>活動時間</label>
+  <input type="text" id="line-time" placeholder="例：7/15 起，每天限量 30 份">
+
+  <label>目標</label>
+  <select id="line-goal">
+    <option>讓客人來消費</option>
+    <option>告知新品</option>
+    <option>通知事項（營業時間異動等）</option>
+  </select>
+
+  <label>補充（選填）</label>
+  <textarea id="line-extra" placeholder="例：韓國進口泡菜、限量 30 份"></textarea>
+
+  <button class="btn btn-primary" onclick="generate('line')">📱 產生 3 種風格文案</button>
+  <div id="output-line"></div>
+</div>
+
+</div>
+
+<script>
+// ===== Tab switching =====
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// ===== Stars =====
+let reviewRating = 0;
+document.querySelectorAll('.star').forEach(star => {
+  star.addEventListener('click', () => {
+    reviewRating = parseInt(star.dataset.v);
+    document.querySelectorAll('.star').forEach((s, i) => {
+      s.classList.toggle('active', i < reviewRating);
+    });
+  });
+});
+
+// ===== Custom personality =====
+document.getElementById('brand-personality').addEventListener('change', function() {
+  document.getElementById('brand-personality-custom').style.display = this.value === 'custom' ? 'block' : 'none';
+});
+
+// ===== Load saved data =====
+function loadSaved() {
+  const keys = ['api-key','ai-provider','brand-name','brand-desc','brand-audience','brand-personality','brand-personality-custom','brand-samples','brand-avoid','brand-products'];
+  keys.forEach(k => {
+    const el = document.getElementById(k);
+    const v = localStorage.getItem('solvetw_' + k);
+    if (v && el) el.value = v;
+  });
+  if (localStorage.getItem('solvetw_brand-name')) {
+    document.getElementById('dna-saved').style.display = 'inline-block';
+    document.getElementById('onboard-msg').style.display = 'none';
+  } else {
+    document.getElementById('onboard-msg').style.display = 'block';
+  }
+  // Set default month
+  const now = new Date();
+  document.getElementById('cal-month').value = now.getFullYear() + '-' + String(now.getMonth() + 2).padStart(2, '0');
+  // Set default day
+  const days = ['日','一','二','三','四','五','六'];
+  document.getElementById('post-day').value = '星期' + days[now.getDay()];
+}
+loadSaved();
+
+// ===== Save brand =====
+function saveBrand() {
+  const keys = ['api-key','ai-provider','brand-name','brand-desc','brand-audience','brand-personality','brand-personality-custom','brand-samples','brand-avoid','brand-products'];
+  keys.forEach(k => {
+    const el = document.getElementById(k);
+    if (el) localStorage.setItem('solvetw_' + k, el.value);
+  });
+  document.getElementById('dna-saved').style.display = 'inline-block';
+  document.getElementById('onboard-msg').style.display = 'none';
+  alert('品牌資料已儲存 ✓\n之後所有產出都會自動對齊你的風格。');
+}
+
+// ===== Build brand DNA string =====
+function getBrandDNA() {
+  const name = localStorage.getItem('solvetw_brand-name') || '';
+  const desc = localStorage.getItem('solvetw_brand-desc') || '';
+  const audience = localStorage.getItem('solvetw_brand-audience') || '';
+  let personality = localStorage.getItem('solvetw_brand-personality') || '';
+  if (personality === 'custom') personality = localStorage.getItem('solvetw_brand-personality-custom') || '';
+  const samples = localStorage.getItem('solvetw_brand-samples') || '';
+  const avoid = localStorage.getItem('solvetw_brand-avoid') || '';
+  const products = localStorage.getItem('solvetw_brand-products') || '';
+
+  return `品牌：${name}\n簡介：${desc}\n客群：${audience}\n品牌個性：${personality}\n風格範例：${samples}\n絕對不要：${avoid}\n主力商品/服務：${products}`;
+}
+
+// ===== Test API key =====
+async function testKey() {
+  const el = document.getElementById('key-status');
+  const key = document.getElementById('api-key').value.trim();
+  const provider = document.getElementById('ai-provider').value;
+  if (!key) { el.innerHTML = '<div class="status status-warn">請先填入 API Key</div>'; return; }
+  el.innerHTML = '<div class="loading">測試中</div>';
+  try {
+    if (provider === 'gemini') {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+      if (r.ok) el.innerHTML = '<div class="status status-ok">✅ Gemini 連線成功！</div>';
+      else throw new Error('Key 無效');
+    } else {
+      const r = await fetch('https://api.openai.com/v1/models', { headers: { 'Authorization': 'Bearer ' + key } });
+      if (r.ok) el.innerHTML = '<div class="status status-ok">✅ OpenAI 連線成功！</div>';
+      else throw new Error('Key 無效');
+    }
+    localStorage.setItem('solvetw_api-key', key);
+    localStorage.setItem('solvetw_ai-provider', provider);
+  } catch(e) {
+    el.innerHTML = '<div class="status status-err">❌ 連線失敗，請確認 API Key</div>';
+  }
+}
+
+// ===== AI Call =====
+async function callAI(prompt) {
+  const key = localStorage.getItem('solvetw_api-key');
+  const provider = localStorage.getItem('solvetw_ai-provider') || 'gemini';
+  if (!key) throw new Error('請先在「品牌設定」填入 API Key');
+
+  if (provider === 'gemini') {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    if (!r.ok) throw new Error('API 錯誤：' + r.status);
+    const d = await r.json();
+    return d.candidates?.[0]?.content?.parts?.[0]?.text || '（沒有回應）';
+  } else {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: prompt }], temperature: 0.8 })
+    });
+    if (!r.ok) throw new Error('API 錯誤：' + r.status);
+    const d = await r.json();
+    return d.choices?.[0]?.message?.content || '（沒有回應）';
+  }
+}
+
+// ===== System prompt =====
+function sysPrompt() {
+  return `你是台灣中小企業的社群內容專家。以下是這間店的品牌資料，所有產出都要符合這個風格：
+
+${getBrandDNA()}
+
+寫作規則：
+- 口語，像在講話，不是寫文章
+- 不要用「絕對」「必須」「快搶」「錯過可惜」等推銷詞
+- 不要用「本店秉持」「竭誠服務」等官腔
+- 不要說「每一口都是幸福的滋味」這種 AI 味的話
+- emoji 最多 2 個，要自然
+- 繁體中文`;
+}
+
+// ===== Generate =====
+async function generate(type) {
+  const outEl = document.getElementById('output-' + type);
+  let prompt = sysPrompt() + '\n\n';
+
+  if (type === 'calendar') {
+    const m = document.getElementById('cal-month').value;
+    const ev = document.getElementById('cal-events').value;
+    prompt += `請幫我規劃 ${m} 的社群內容排程。
+
+這個月的重要事項：${ev}
+
+產出 Markdown 表格，每天一列：日期 | 星期 | 平台(IG/LINE/休息) | 主題 | 內容方向（一句話）| 類型emoji
+
+類型：🍳產品 💬互動 🎉活動 😄日常 📸回饋
+
+規則：同類型不連續超過2天、週一加油打氣、週五輕鬆、每週至少1互動、週日可休息、LINE每週最多2次`;
+  }
+  else if (type === 'post') {
+    const topic = document.getElementById('post-topic').value;
+    const photo = document.getElementById('post-photo').value;
+    const focus = document.getElementById('post-focus').value;
+    const day = document.getElementById('post-day').value;
+    prompt += `請幫我寫一則 IG 貼文。
+
+主題：${topic}
+照片描述：${photo}
+想強調：${focus || '純粹分享'}
+今天是：${day}
+
+產出：
+1. 文案（80-120字，分2-3段）
+2. 5 個 hashtag（3通用+2相關）
+3. 建議發文時間
+
+直接寫，不要問我問題。`;
+  }
+  else if (type === 'review') {
+    const text = document.getElementById('review-text').value;
+    const branch = document.getElementById('review-branch').value;
+    prompt += `客人在 Google 留了負評，請幫我回覆。
+
+客人寫的：「${text}」
+評分：${reviewRating} 星
+分店：${branch || '未指定'}
+
+回覆規則：
+- 先感謝他說出來（不要用罐頭話）
+- 我們的問題就承認，誤會就溫和解釋
+- 不主動提供補償
+- 80-120字
+- 直接給回覆，不要解釋你為什麼這樣寫`;
+  }
+  else if (type === 'line') {
+    const topic = document.getElementById('line-topic').value;
+    const time = document.getElementById('line-time').value;
+    const goal = document.getElementById('line-goal').value;
+    const extra = document.getElementById('line-extra').value;
+    prompt += `我要發 LINE 推播。
+
+主題：${topic}
+時間：${time}
+目標：${goal}
+補充：${extra || '無'}
+
+請產出 3 種風格，每種包含「標題(≤15字)」「內文(80-120字)」「CTA按鈕文字(≤6字)」：
+1. 🔥 直接型
+2. 💛 溫馨型
+3. 😆 趣味型`;
+  }
+
+  outEl.innerHTML = '<div class="loading">AI 正在寫</div>';
+
+  try {
+    const result = await callAI(prompt);
+    outEl.innerHTML = `
+      <div class="output-card">${result.replace(/\n/g, '<br>')}</div>
+      <div class="btn-row">
+        <button class="btn btn-copy" onclick="copyOutput(this)">📋 複製</button>
+        <button class="btn btn-secondary" onclick="generate('${type}')">🔄 再一版</button>
+      </div>`;
+  } catch(e) {
+    outEl.innerHTML = `<div class="status status-err">❌ ${e.message}</div>`;
+  }
+}
+
+// ===== Copy =====
+function copyOutput(btn) {
+  const card = btn.closest('.btn-row').previousElementSibling;
+  const text = card.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✅ 已複製！';
+    setTimeout(() => btn.textContent = orig, 1500);
+  });
+}
+</script>
+</body>
+</html>
