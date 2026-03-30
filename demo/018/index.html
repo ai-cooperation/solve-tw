@@ -577,6 +577,30 @@ function runMatch() {
     html += `<details class="status status-err" open><summary style="cursor:pointer">⚠️ 重複發票 ${dupes.length} 組：${dupes.join('、')}</summary>` + renderInvTable(dupeInvs, false, true) + '</details>';
   }
 
+  // Suspicious duplicates: same seller + same amount + within 7 days (different invoice numbers)
+  const suspectGroups = [];
+  for (let i = 0; i < invoices.length; i++) {
+    for (let j = i + 1; j < invoices.length; j++) {
+      const a = invoices[i], b = invoices[j];
+      if (a.invoice_no === b.invoice_no) continue; // already caught above
+      if (a.seller_name && a.seller_name === b.seller_name && a.total > 0 && a.total === b.total) {
+        const da = new Date(a.date), db = new Date(b.date);
+        const dayDiff = Math.abs(da - db) / 86400000;
+        if (dayDiff <= 7) {
+          // Check not already in a group
+          let found = suspectGroups.find(g => g.some(x => x.id === a.id || x.id === b.id));
+          if (found) { if (!found.find(x => x.id === a.id)) found.push(a); if (!found.find(x => x.id === b.id)) found.push(b); }
+          else suspectGroups.push([a, b]);
+        }
+      }
+    }
+  }
+  if (suspectGroups.length) {
+    const suspectInvs = suspectGroups.flat();
+    const summary = suspectGroups.map(g => `${g[0].seller_name} $${g[0].total.toLocaleString()} ×${g.length}筆`).join('、');
+    html += `<details class="status status-warn" open><summary style="cursor:pointer">🔍 疑似重複請款 ${suspectGroups.length} 組（同廠商+同金額+7天內）：${summary}</summary>` + renderInvTable(suspectInvs, false, true) + '</details>';
+  }
+
   // Amount anomaly (>3x average)
   const avg = invoices.reduce((s, i) => s + (i.total || 0), 0) / invoices.length;
   const anomalies = invoices.filter(i => (i.total || 0) > avg * 3);
