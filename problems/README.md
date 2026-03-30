@@ -36,7 +36,7 @@
 | [#15](../../issues/15) | 進銷存異常偵測 — 庫存 AI 警報 | 🛒 服務 | ⭐⭐ | 🏃 Sprint | 🟢 Open | |
 | [#16](../../issues/16) | 合約到期提醒與條款摘要工具 | 🔧 通用 | ⭐ | ⚡ Quick Fix | 🟢 Open | |
 | [#17](../../issues/17) | 外銷多語信件 AI 翻譯與回覆 | 🏭 製造 | ⭐ | ⚡ Quick Fix | 🟢 Open | |
-| [#18](../../issues/18) | 電子發票自動分類與對帳工具 | 🔧 通用 | ⭐⭐ | 🏃 Sprint | 🟢 Open | |
+| [#18](../../issues/18) | 電子發票自動分類與對帳工具 | 🔧 通用 | ⭐⭐ | 🏃 Sprint | 🔵 解法已提交 | [Demo](https://ai-cooperation.github.io/solve-tw/demo/018/) |
 | [#19](../../issues/19) | 製造業品質異常根因分析 AI 助手 | 🏭 製造 | ⭐⭐⭐ | 🏃 Sprint | 🟢 Open | |
 | [#20](../../issues/20) | 中小企業 AI 面試助手 | 🔧 通用 | ⭐⭐ | 🏃 Sprint | 🟢 Open | |
 
