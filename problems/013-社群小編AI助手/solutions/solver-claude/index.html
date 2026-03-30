@@ -109,12 +109,19 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #f0c040
   <select id="ai-provider">
     <option value="gemini">Google Gemini（免費）</option>
     <option value="openai">OpenAI</option>
+    <option value="gemgate">GemGate（自架 Gemini Gateway）</option>
   </select>
-  <div class="hint">建議用 Gemini，免費額度夠用</div>
+  <div class="hint">建議用 Gemini（免費）或 GemGate（不需要 API Key）</div>
 
-  <label>API Key</label>
+  <label>API Key <span id="key-optional" style="display:none; color:#888; font-weight:normal">（GemGate 不需要填）</span></label>
   <input type="password" id="api-key" placeholder="貼上你的 API Key">
-  <div class="hint">Gemini：到 aistudio.google.com 免費申請</div>
+  <div class="hint" id="key-hint">Gemini：到 aistudio.google.com 免費申請</div>
+
+  <div id="gemgate-config" style="display:none">
+    <label>GemGate 網址</label>
+    <input type="text" id="gemgate-url" placeholder="例：http://43.159.131.124:8760" value="http://43.159.131.124:8760">
+    <div class="hint">預設 Demo 伺服器。到首頁輸入姓名取得免費 API Key，填在上面 API Key 欄位。</div>
+  </div>
   <button class="btn btn-secondary" onclick="testKey()">測試連線</button>
   <div id="key-status"></div>
 
@@ -257,14 +264,34 @@ document.getElementById('brand-personality').addEventListener('change', function
   document.getElementById('brand-personality-custom').style.display = this.value === 'custom' ? 'block' : 'none';
 });
 
+// ===== Provider switching =====
+document.getElementById('ai-provider').addEventListener('change', function() {
+  const isGemgate = this.value === 'gemgate';
+  document.getElementById('gemgate-config').style.display = isGemgate ? 'block' : 'none';
+  document.getElementById('key-optional').style.display = isGemgate ? 'inline' : 'none';
+  document.getElementById('api-key').required = !isGemgate;
+  if (isGemgate) {
+    document.getElementById('key-hint').textContent = 'GemGate 不需要 API Key，直接測試連線即可';
+  } else if (this.value === 'openai') {
+    document.getElementById('key-hint').textContent = 'OpenAI：到 platform.openai.com 取得';
+  } else {
+    document.getElementById('key-hint').textContent = 'Gemini：到 aistudio.google.com 免費申請';
+  }
+});
+
 // ===== Load saved data =====
 function loadSaved() {
-  const keys = ['api-key','ai-provider','brand-name','brand-desc','brand-audience','brand-personality','brand-personality-custom','brand-samples','brand-avoid','brand-products'];
+  const keys = ['api-key','ai-provider','brand-name','brand-desc','brand-audience','brand-personality','brand-personality-custom','brand-samples','brand-avoid','brand-products','gemgate-url'];
   keys.forEach(k => {
     const el = document.getElementById(k);
     const v = localStorage.getItem('solvetw_' + k);
     if (v && el) el.value = v;
   });
+  // Show gemgate config if previously selected
+  if (localStorage.getItem('solvetw_ai-provider') === 'gemgate') {
+    document.getElementById('gemgate-config').style.display = 'block';
+    document.getElementById('key-optional').style.display = 'inline';
+  }
   if (localStorage.getItem('solvetw_brand-name')) {
     document.getElementById('dna-saved').style.display = 'inline-block';
     document.getElementById('onboard-msg').style.display = 'none';
@@ -282,7 +309,7 @@ loadSaved();
 
 // ===== Save brand =====
 function saveBrand() {
-  const keys = ['api-key','ai-provider','brand-name','brand-desc','brand-audience','brand-personality','brand-personality-custom','brand-samples','brand-avoid','brand-products'];
+  const keys = ['api-key','ai-provider','brand-name','brand-desc','brand-audience','brand-personality','brand-personality-custom','brand-samples','brand-avoid','brand-products','gemgate-url'];
   keys.forEach(k => {
     const el = document.getElementById(k);
     if (el) localStorage.setItem('solvetw_' + k, el.value);
@@ -311,10 +338,21 @@ async function testKey() {
   const el = document.getElementById('key-status');
   const key = document.getElementById('api-key').value.trim();
   const provider = document.getElementById('ai-provider').value;
-  if (!key) { el.innerHTML = '<div class="status status-warn">請先填入 API Key</div>'; return; }
+  if (!key && provider !== 'gemgate') { el.innerHTML = '<div class="status status-warn">請先填入 API Key</div>'; return; }
   el.innerHTML = '<div class="loading">測試中</div>';
   try {
-    if (provider === 'gemini') {
+    if (provider === 'gemgate') {
+      const url = document.getElementById('gemgate-url').value.trim().replace(/\/+$/, '');
+      const gemgateKey = key || '';
+      const r = await fetch(url + '/v1/models', {
+        headers: gemgateKey ? { 'Authorization': 'Bearer ' + gemgateKey } : {}
+      });
+      if (r.ok) {
+        el.innerHTML = '<div class="status status-ok">✅ GemGate 連線成功！</div>';
+        localStorage.setItem('solvetw_gemgate-url', url);
+      }
+      else throw new Error('GemGate 連線失敗（' + r.status + '）。請確認 API Key 是否正確。');
+    } else if (provider === 'gemini') {
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
       if (r.ok) el.innerHTML = '<div class="status status-ok">✅ Gemini 連線成功！</div>';
       else throw new Error('Key 無效');
@@ -326,7 +364,7 @@ async function testKey() {
     localStorage.setItem('solvetw_api-key', key);
     localStorage.setItem('solvetw_ai-provider', provider);
   } catch(e) {
-    el.innerHTML = '<div class="status status-err">❌ 連線失敗，請確認 API Key</div>';
+    el.innerHTML = '<div class="status status-err">❌ 連線失敗：' + e.message + '</div>';
   }
 }
 
@@ -334,17 +372,41 @@ async function testKey() {
 async function callAI(prompt) {
   const key = localStorage.getItem('solvetw_api-key');
   const provider = localStorage.getItem('solvetw_ai-provider') || 'gemini';
+
+  if (provider === 'gemgate') {
+    const url = (localStorage.getItem('solvetw_gemgate-url') || 'http://43.159.131.124:8760').replace(/\/+$/, '');
+    const gemgateKey = key || '';
+    if (!gemgateKey) throw new Error('請先到 GemGate 首頁取得 API Key，填在上方 API Key 欄位');
+    const r = await fetch(url + '/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + gemgateKey },
+      body: JSON.stringify({ model: 'gemini-2.0-flash', messages: [{ role: 'user', content: prompt }] })
+    });
+    if (!r.ok) { const err = await r.json().catch(() => ({})); throw new Error('GemGate 錯誤：' + (err.detail || r.status)); }
+    const d = await r.json();
+    return d.choices?.[0]?.message?.content || '（沒有回應）';
+  }
+
   if (!key) throw new Error('請先在「品牌設定」填入 API Key');
 
   if (provider === 'gemini') {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+    const model = 'gemini-3.1-flash-lite-preview';
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
-    if (!r.ok) throw new Error('API 錯誤：' + r.status);
-    const d = await r.json();
-    return d.candidates?.[0]?.content?.parts?.[0]?.text || '（沒有回應）';
+    const body = await r.text();
+    if (r.ok) {
+      const d = JSON.parse(body);
+      const text = d.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) return text;
+      throw new Error('模型回傳空內容（可能觸發安全過濾）');
+    }
+    // 直接顯示 Gemini 的錯誤
+    let msg = `HTTP ${r.status}`;
+    try { const e = JSON.parse(body); msg = e.error?.message || msg; } catch(_) {}
+    throw new Error(msg);
   } else {
     const r = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
