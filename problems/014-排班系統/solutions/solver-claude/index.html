@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 排班助手</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, 'Noto Sans TC', sans-serif; background: #f0f4f8; color: #333; font-size: 16px; }
+
+.header { background: #2d3436; color: #fff; padding: 12px 16px; text-align: center; }
+.header h1 { font-size: 20px; }
+.header small { color: #b2bec3; font-size: 13px; }
+
+.tabs { display: flex; background: #fff; border-bottom: 1px solid #eee; overflow-x: auto; }
+.tab { flex: 1; min-width: 60px; padding: 10px 4px; text-align: center; cursor: pointer; border-bottom: 3px solid transparent; font-size: 12px; }
+.tab.active { border-bottom-color: #0984e3; background: #dfe6e9; font-weight: bold; }
+.tab-icon { font-size: 18px; display: block; margin-bottom: 2px; }
+
+.content { max-width: 900px; margin: 0 auto; padding: 16px; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+label { display: block; font-weight: bold; margin: 12px 0 4px; font-size: 14px; }
+input, textarea, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 15px; font-family: inherit; }
+textarea { font-size: 13px; font-family: monospace; }
+.hint { font-size: 13px; color: #999; margin-top: 4px; }
+
+.btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 12px; }
+.btn-primary { background: #0984e3; color: #fff; }
+.btn-primary:hover { background: #0773c5; }
+.btn-secondary { background: #dfe6e9; color: #2d3436; }
+.btn-sm { display: inline-block; width: auto; padding: 8px 14px; font-size: 14px; margin: 4px 4px 4px 0; }
+
+.section-title { font-size: 15px; font-weight: bold; margin: 20px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #dfe6e9; }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 16px 0; }
+.stat-card { background: #fff; border-radius: 8px; padding: 14px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+.stat-num { font-size: 24px; font-weight: bold; color: #0984e3; }
+.stat-label { font-size: 12px; color: #888; }
+
+.status { padding: 10px 16px; border-radius: 8px; margin: 12px 0; font-size: 14px; }
+.status-ok { background: #d4efdf; color: #1e8449; }
+.status-warn { background: #fdebd0; color: #b9770e; }
+.status-err { background: #fadbd8; color: #922b21; }
+
+/* Schedule grid */
+.sched-wrap { overflow-x: auto; margin-top: 12px; }
+.sched-table { border-collapse: collapse; font-size: 13px; min-width: 700px; }
+.sched-table th { background: #2d3436; color: #fff; padding: 8px 10px; text-align: center; position: sticky; top: 0; }
+.sched-table td { padding: 6px 8px; border: 1px solid #dfe6e9; text-align: center; min-width: 80px; }
+.sched-table tr:nth-child(even) { background: #f8f9fa; }
+.shift-tag { display: inline-block; padding: 3px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; }
+.shift-morning { background: #ffeaa7; color: #6c5ce7; }
+.shift-afternoon { background: #81ecec; color: #00b894; }
+.shift-evening { background: #a29bfe; color: #fff; }
+.shift-off { background: #dfe6e9; color: #636e72; }
+.shift-holiday { background: #fd79a8; color: #fff; }
+
+.tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; }
+.tag-ok { background: #d4efdf; color: #1e8449; }
+.tag-warn { background: #fdebd0; color: #b9770e; }
+.tag-err { background: #fadbd8; color: #922b21; }
+
+.loading { text-align: center; padding: 20px; color: #999; }
+.loading::after { content: ''; display: inline-block; width: 18px; height: 18px; border: 3px solid #ddd; border-top-color: #0984e3; border-radius: 50%; animation: spin .8s linear infinite; margin-left: 8px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+details { margin-bottom: 12px; }
+details summary { cursor: pointer; font-weight: bold; padding: 8px 0; }
+
+.emp-card { background: #fff; border-radius: 8px; padding: 12px; margin: 8px 0; box-shadow: 0 1px 4px rgba(0,0,0,.06); display: flex; align-items: center; gap: 12px; }
+.emp-name { font-weight: bold; min-width: 80px; }
+.emp-info { font-size: 13px; color: #636e72; }
+.avail-dots { display: flex; gap: 2px; }
+.avail-dot { width: 14px; height: 14px; border-radius: 3px; }
+.avail-y { background: #00b894; }
+.avail-n { background: #dfe6e9; }
+
+.fair-bar { display: flex; align-items: center; margin: 3px 0; font-size: 13px; }
+.fair-name { width: 80px; text-align: right; padding-right: 8px; }
+.fair-fill { height: 18px; border-radius: 3px; min-width: 2px; }
+.fair-val { padding-left: 6px; font-size: 12px; color: #636e72; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📅 AI 排班助手</h1>
+  <small>自動排班 → 勞基法合規 → 公平分配 ｜ cooperation.tw</small>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="setup"><span class="tab-icon">👥</span>設定</div>
+  <div class="tab" data-tab="schedule"><span class="tab-icon">📅</span>排班</div>
+  <div class="tab" data-tab="leave"><span class="tab-icon">🔄</span>請假換班</div>
+  <div class="tab" data-tab="fairness"><span class="tab-icon">⚖️</span>公平性</div>
+</div>
+
+<div class="content">
+
+<!-- ===== 設定 ===== -->
+<div class="panel active" id="panel-setup">
+  <div class="section-title">門市營業設定</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+    <div><label>門市名稱</label><input id="store-name" value="中壢環北店"></div>
+    <div><label>排班週</label><input id="week-start" type="date"></div>
+  </div>
+
+  <label>班別設定</label>
+  <div class="hint">預設三班制，可在下方調整</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:8px;">
+    <div style="background:#ffeaa7; padding:8px; border-radius:8px; text-align:center;">
+      <b>早班</b><br>
+      <input id="shift-m-start" value="07:00" style="width:80px;display:inline"> -
+      <input id="shift-m-end" value="13:00" style="width:80px;display:inline"><br>
+      需 <input id="shift-m-need" type="number" value="3" style="width:50px;display:inline"> 人
+    </div>
+    <div style="background:#81ecec; padding:8px; border-radius:8px; text-align:center;">
+      <b>午班</b><br>
+      <input id="shift-a-start" value="13:00" style="width:80px;display:inline"> -
+      <input id="shift-a-end" value="18:00" style="width:80px;display:inline"><br>
+      需 <input id="shift-a-need" type="number" value="2" style="width:50px;display:inline"> 人
+    </div>
+    <div style="background:#a29bfe; padding:8px; border-radius:8px; text-align:center;">
+      <b>晚班</b><br>
+      <input id="shift-e-start" value="18:00" style="width:80px;display:inline"> -
+      <input id="shift-e-end" value="22:00" style="width:80px;display:inline"><br>
+      需 <input id="shift-e-need" type="number" value="2" style="width:50px;display:inline"> 人
+    </div>
+  </div>
+  <div class="hint">假日（六日）人力需求自動 ×1.5</div>
+
+  <div class="section-title">員工資料</div>
+  <textarea id="csv-employees" rows="8" placeholder="姓名,類型(正職/工讀),週一,週二,週三,週四,週五,週六,週日&#10;可用時段填: 全/早/午/晚/無&#10;範例: 王小明,正職,全,全,全,全,全,早,無"></textarea>
+  <div style="display:flex; gap:8px; margin-top:8px;">
+    <button class="btn btn-secondary btn-sm" onclick="loadDemoEmployees()">載入 15 人模擬資料</button>
+    <button class="btn btn-primary btn-sm" onclick="importEmployees()">匯入員工</button>
+  </div>
+  <div id="emp-list"></div>
+</div>
+
+<!-- ===== 排班 ===== -->
+<div class="panel" id="panel-schedule">
+  <div class="stats" id="sched-stats"></div>
+
+  <details open>
+    <summary>⚖️ 勞基法約束（自動檢查）</summary>
+    <div style="font-size:13px; color:#636e72; padding:8px 0;">
+      ✅ 每日正常工時 ≤ 8 小時<br>
+      ✅ 每週正常工時 ≤ 40 小時<br>
+      ✅ 每 7 天至少 1 天例假 + 1 天休息日<br>
+      ✅ 連續工作不超過 6 天<br>
+      ✅ 假日班公平分配（差異 ≤ 1）
+    </div>
+  </details>
+
+  <button class="btn btn-primary" onclick="generateSchedule()">🤖 自動排班</button>
+  <button class="btn btn-secondary btn-sm" onclick="exportScheduleCSV()">📥 匯出 CSV</button>
+  <div id="sched-output"></div>
+  <div id="sched-violations"></div>
+</div>
+
+<!-- ===== 請假換班 ===== -->
+<div class="panel" id="panel-leave">
+  <div class="section-title">員工請假 → 替代建議</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+    <div><label>請假員工</label><select id="leave-who"></select></div>
+    <div><label>請假日期</label><select id="leave-day">
+      <option value="0">週一</option><option value="1">週二</option><option value="2">週三</option>
+      <option value="3">週四</option><option value="4">週五</option><option value="5">週六</option><option value="6">週日</option>
+    </select></div>
+  </div>
+  <button class="btn btn-primary" onclick="suggestReplace()">🔄 建議替代人選</button>
+  <div id="leave-output"></div>
+</div>
+
+<!-- ===== 公平性 ===== -->
+<div class="panel" id="panel-fairness">
+  <div class="section-title">班次分配公平性</div>
+  <div id="fairness-output"></div>
+</div>
+
+</div>
+
+<script>
+// ===== Tabs =====
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('panel-' + t.dataset.tab).classList.add('active');
+  if (t.dataset.tab === 'fairness') showFairness();
+  if (t.dataset.tab === 'leave') populateLeaveSelect();
+}));
+
+// Set default week to next Monday
+const today = new Date();
+const nextMon = new Date(today);
+nextMon.setDate(today.getDate() + ((8 - today.getDay()) % 7 || 7));
+document.getElementById('week-start').value = nextMon.toISOString().slice(0, 10);
+
+// ===== Storage =====
+function getEmps() { return JSON.parse(localStorage.getItem('sched_emps') || '[]'); }
+function saveEmps(d) { localStorage.setItem('sched_emps', JSON.stringify(d)); }
+function getSched() { return JSON.parse(localStorage.getItem('sched_result') || '[]'); }
+function saveSched(d) { localStorage.setItem('sched_result', JSON.stringify(d)); }
+
+const DAYS = ['一','二','三','四','五','六','日'];
+const SHIFTS = ['早','午','晚'];
+const SHIFT_COLORS = { '早': 'shift-morning', '午': 'shift-afternoon', '晚': 'shift-evening', '休': 'shift-off' };
+
+// ===== Import employees =====
+function importEmployees() {
+  const raw = document.getElementById('csv-employees').value.trim();
+  if (!raw) return;
+  const lines = raw.split('\n').filter(l => l.trim());
+  const emps = lines.map(l => {
+    const parts = l.split(',').map(s => s.trim());
+    return {
+      name: parts[0],
+      type: parts[1] || '正職',
+      avail: parts.slice(2, 9).map(a => {
+        if (!a || a === '無') return [];
+        if (a === '全') return ['早','午','晚'];
+        return a.split('').filter(x => SHIFTS.includes(x)).length ? a.split('').filter(x => SHIFTS.includes(x)) : a.split('/').filter(x => SHIFTS.includes(x));
+      }),
+    };
+  });
+  // Pad avail to 7 days
+  emps.forEach(e => { while (e.avail.length < 7) e.avail.push([]); });
+  saveEmps(emps);
+  renderEmps();
+}
+
+function renderEmps() {
+  const emps = getEmps();
+  const el = document.getElementById('emp-list');
+  if (!emps.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="section-title">員工 ${emps.length} 人</div>` +
+    emps.map(e => `<div class="emp-card">
+      <div class="emp-name">${e.name}</div>
+      <div class="emp-info">${e.type}</div>
+      <div class="avail-dots" title="週一~週日可用時段">
+        ${e.avail.map((a, i) => `<div class="avail-dot ${a.length ? 'avail-y' : 'avail-n'}" title="週${DAYS[i]}：${a.length ? a.join('/') : '不可'}"></div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+renderEmps();
+
+// ===== Schedule generation (Greedy + Constraint) =====
+function generateSchedule() {
+  const emps = getEmps();
+  const el = document.getElementById('sched-output');
+  const vEl = document.getElementById('sched-violations');
+
+  if (emps.length < 3) { el.innerHTML = '<div class="status status-warn">至少需要 3 名員工</div>'; return; }
+
+  const needM = parseInt(document.getElementById('shift-m-need').value) || 3;
+  const needA = parseInt(document.getElementById('shift-a-need').value) || 2;
+  const needE = parseInt(document.getElementById('shift-e-need').value) || 2;
+
+  const shiftHours = {
+    '早': calcHours(document.getElementById('shift-m-start').value, document.getElementById('shift-m-end').value),
+    '午': calcHours(document.getElementById('shift-a-start').value, document.getElementById('shift-a-end').value),
+    '晚': calcHours(document.getElementById('shift-e-start').value, document.getElementById('shift-e-end').value),
+  };
+
+  // Track per employee: total hours, holiday shifts, consecutive days, shifts assigned
+  const track = emps.map(() => ({ hours: 0, holidayShifts: 0, consecutiveDays: 0, dailyShifts: Array(7).fill(null), totalShifts: 0 }));
+
+  // For each day, for each shift, assign employees
+  const schedule = []; // [{day, shift, employees: [name]}]
+  const violations = [];
+
+  for (let d = 0; d < 7; d++) {
+    const isHoliday = d >= 5; // Sat/Sun
+    const multiplier = isHoliday ? 1.5 : 1;
+    const needs = [
+      { shift: '早', need: Math.ceil(needM * multiplier) },
+      { shift: '午', need: Math.ceil(needA * multiplier) },
+      { shift: '晚', need: Math.ceil(needE * multiplier) },
+    ];
+
+    for (const { shift, need } of needs) {
+      // Find eligible employees, sorted by: least hours > least holiday shifts > random
+      const candidates = emps.map((e, i) => ({ idx: i, name: e.name }))
+        .filter(c => {
+          const t = track[c.idx];
+          const e = emps[c.idx];
+          // Available this day+shift?
+          if (!e.avail[d] || !e.avail[d].includes(shift)) return false;
+          // Already assigned today?
+          if (t.dailyShifts[d]) return false;
+          // Would exceed 40hr/week?
+          if (t.hours + shiftHours[shift] > 40) return false;
+          // Would exceed 6 consecutive days?
+          if (d > 0 && t.consecutiveDays >= 6 && t.dailyShifts[d-1]) return false;
+          return true;
+        })
+        .sort((a, b) => {
+          const ta = track[a.idx], tb = track[b.idx];
+          // Prefer less holiday shifts (fairness)
+          if (isHoliday && ta.holidayShifts !== tb.holidayShifts) return ta.holidayShifts - tb.holidayShifts;
+          // Prefer less total hours
+          if (ta.hours !== tb.hours) return ta.hours - tb.hours;
+          // Prefer less total shifts
+          return ta.totalShifts - tb.totalShifts;
+        });
+
+      const assigned = candidates.slice(0, need);
+      if (assigned.length < need) {
+        violations.push(`週${DAYS[d]} ${shift}班：需要 ${need} 人，只排到 ${assigned.length} 人`);
+      }
+
+      assigned.forEach(c => {
+        track[c.idx].hours += shiftHours[shift];
+        track[c.idx].dailyShifts[d] = shift;
+        track[c.idx].totalShifts++;
+        if (isHoliday) track[c.idx].holidayShifts++;
+        // Update consecutive
+        if (d === 0 || track[c.idx].dailyShifts[d-1]) {
+          track[c.idx].consecutiveDays++;
+        } else {
+          track[c.idx].consecutiveDays = 1;
+        }
+      });
+
+      schedule.push({ day: d, shift, employees: assigned.map(c => c.name) });
+    }
+  }
+
+  // Check rest day: everyone must have at least 1 day off
+  const restViolations = [];
+  emps.forEach((e, i) => {
+    const daysWorked = track[i].dailyShifts.filter(s => s).length;
+    if (daysWorked === 7) restViolations.push(`${e.name} 整週無休（違反勞基法）`);
+    if (daysWorked > 6) restViolations.push(`${e.name} 連續工作超過 6 天`);
+  });
+  violations.push(...restViolations);
+
+  // Save result
+  const result = emps.map((e, i) => ({
+    name: e.name, type: e.type,
+    shifts: track[i].dailyShifts.map(s => s || '休'),
+    hours: track[i].hours,
+    holidayShifts: track[i].holidayShifts,
+  }));
+  saveSched(result);
+
+  // Stats
+  document.getElementById('sched-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${emps.length}</div><div class="stat-label">員工</div></div>
+    <div class="stat-card"><div class="stat-num">${schedule.reduce((s,x) => s + x.employees.length, 0)}</div><div class="stat-label">總班次</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:${violations.length?'#d63031':'#00b894'}">${violations.length}</div><div class="stat-label">違規</div></div>
+    <div class="stat-card"><div class="stat-num">${Math.max(...result.map(r=>r.holidayShifts)) - Math.min(...result.map(r=>r.holidayShifts))}</div><div class="stat-label">假日班差異</div></div>`;
+
+  // Render grid
+  el.innerHTML = `<div class="sched-wrap"><table class="sched-table">
+    <tr><th>員工</th><th>類型</th>${DAYS.map((d,i) => `<th style="${i>=5?'background:#d63031':''}">${d}</th>`).join('')}<th>時數</th><th>假日</th></tr>
+    ${result.map(r => `<tr>
+      <td style="text-align:left; font-weight:bold">${r.name}</td>
+      <td>${r.type}</td>
+      ${r.shifts.map(s => `<td><span class="shift-tag ${SHIFT_COLORS[s] || 'shift-off'}">${s}</span></td>`).join('')}
+      <td>${r.hours}h</td>
+      <td>${r.holidayShifts}</td>
+    </tr>`).join('')}
+  </table></div>`;
+
+  // Violations
+  if (violations.length) {
+    vEl.innerHTML = `<details class="status status-warn" open><summary>⚠️ ${violations.length} 個問題</summary><ul style="margin:8px 0 0 20px; font-size:13px;">${violations.map(v => `<li>${v}</li>`).join('')}</ul></details>`;
+  } else {
+    vEl.innerHTML = '<div class="status status-ok">✅ 全部合規，無違反勞基法</div>';
+  }
+}
+
+function calcHours(start, end) {
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  return (eh * 60 + em - sh * 60 - sm) / 60;
+}
+
+// ===== Leave replacement =====
+function populateLeaveSelect() {
+  const emps = getEmps();
+  const sel = document.getElementById('leave-who');
+  sel.innerHTML = emps.map(e => `<option>${e.name}</option>`).join('');
+}
+
+function suggestReplace() {
+  const name = document.getElementById('leave-who').value;
+  const dayIdx = parseInt(document.getElementById('leave-day').value);
+  const sched = getSched();
+  const emps = getEmps();
+  const el = document.getElementById('leave-output');
+
+  if (!sched.length) { el.innerHTML = '<div class="status status-warn">請先排班</div>'; return; }
+
+  const target = sched.find(r => r.name === name);
+  if (!target) { el.innerHTML = '<div class="status status-err">找不到此員工</div>'; return; }
+
+  const targetShift = target.shifts[dayIdx];
+  if (targetShift === '休') { el.innerHTML = '<div class="status status-ok">該員工當天本來就休息</div>'; return; }
+
+  // Find replacements: available + not already working + under 40hr
+  const candidates = emps.map((e, i) => {
+    const r = sched[i];
+    if (e.name === name) return null;
+    if (!e.avail[dayIdx] || !e.avail[dayIdx].includes(targetShift)) return null;
+    if (r.shifts[dayIdx] !== '休') return null;
+    if (r.hours >= 40) return null;
+    return { name: e.name, type: e.type, hours: r.hours, reason: `當天休息、可上${targetShift}班、本週 ${r.hours}h` };
+  }).filter(Boolean).sort((a, b) => a.hours - b.hours);
+
+  if (!candidates.length) {
+    el.innerHTML = `<div class="status status-err">找不到可替代 ${name} 週${DAYS[dayIdx]} ${targetShift}班的人選</div>`;
+    return;
+  }
+
+  el.innerHTML = `<div class="section-title">${name} 週${DAYS[dayIdx]}請假（${targetShift}班）→ 建議替代人選</div>
+    ${candidates.map((c, i) => `<div class="emp-card" style="border-left:4px solid ${i===0?'#00b894':'#dfe6e9'}">
+      <div class="emp-name">${i===0?'🏆 ':''} ${c.name}</div>
+      <div class="emp-info">${c.type} ・ 本週 ${c.hours}h ・ ${c.reason}</div>
+    </div>`).join('')}`;
+}
+
+// ===== Fairness =====
+function showFairness() {
+  const sched = getSched();
+  const el = document.getElementById('fairness-output');
+  if (!sched.length) { el.innerHTML = '<div class="status status-warn">請先排班</div>'; return; }
+
+  const maxH = Math.max(...sched.map(r => r.hours));
+
+  let html = '<div class="section-title">每週工時</div>';
+  sched.sort((a, b) => b.hours - a.hours).forEach(r => {
+    const pct = (r.hours / maxH * 100).toFixed(0);
+    const color = r.hours > 40 ? '#d63031' : r.hours > 32 ? '#0984e3' : '#00b894';
+    html += `<div class="fair-bar"><div class="fair-name">${r.name}</div><div class="fair-fill" style="width:${pct}%; background:${color}"></div><div class="fair-val">${r.hours}h ${r.hours > 40 ? '⚠️' : ''}</div></div>`;
+  });
+
+  const maxHol = Math.max(...sched.map(r => r.holidayShifts));
+  const minHol = Math.min(...sched.map(r => r.holidayShifts));
+  html += `<div class="section-title">假日班次數（差異: ${maxHol - minHol}${maxHol - minHol <= 1 ? ' ✅' : ' ⚠️'}）</div>`;
+  sched.sort((a, b) => b.holidayShifts - a.holidayShifts).forEach(r => {
+    const pct = maxHol > 0 ? (r.holidayShifts / maxHol * 100).toFixed(0) : 0;
+    html += `<div class="fair-bar"><div class="fair-name">${r.name}</div><div class="fair-fill" style="width:${pct}%; background:#fd79a8"></div><div class="fair-val">${r.holidayShifts} 次</div></div>`;
+  });
+
+  // Shift type distribution
+  html += '<div class="section-title">班別分配</div>';
+  sched.forEach(r => {
+    const counts = { '早': 0, '午': 0, '晚': 0 };
+    r.shifts.forEach(s => { if (counts[s] !== undefined) counts[s]++; });
+    html += `<div class="fair-bar">
+      <div class="fair-name">${r.name}</div>
+      <div style="display:flex; gap:2px;">
+        ${Object.entries(counts).map(([s, n]) => `<div class="shift-tag ${SHIFT_COLORS[s]}" style="min-width:${n*30}px">${s}×${n}</div>`).join('')}
+      </div>
+    </div>`;
+  });
+
+  el.innerHTML = html;
+}
+
+// ===== Export =====
+function exportScheduleCSV() {
+  const sched = getSched();
+  if (!sched.length) return alert('請先排班');
+  const store = document.getElementById('store-name').value;
+  const week = document.getElementById('week-start').value;
+  let csv = `${store} 排班表 ${week}\n`;
+  csv += '員工,類型,' + DAYS.join(',') + ',週時數,假日班\n';
+  sched.forEach(r => {
+    csv += [r.name, r.type, ...r.shifts, r.hours + 'h', r.holidayShifts].join(',') + '\n';
+  });
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `排班表_${store}_${week}.csv`; a.click();
+}
+
+// ===== Demo data =====
+function loadDemoEmployees() {
+  const demo = `王小明,正職,全,全,全,全,全,早,無
+李美玲,正職,全,全,全,全,全,無,全
+張大偉,正職,全,全,全,全,全,全,早
+陳雅婷,正職,早/午,全,全,全,早/午,全,全
+林志豪,正職,全,全,無,全,全,全,午/晚
+黃淑芬,正職,全,全,全,無,全,全,全
+吳宗翰,工讀,早,早,無,無,早,全,全
+蔡佩珊,工讀,無,午/晚,午/晚,午/晚,無,全,全
+鄭家豪,工讀,晚,晚,晚,無,晚,無,全
+許雅琪,工讀,午,無,午,午,午,全,無
+楊子涵,工讀,無,早/午,早/午,早/午,無,全,全
+劉建宏,工讀,全,無,全,無,全,無,全
+周怡君,工讀,早/午,早/午,無,早/午,早/午,無,全
+趙偉翔,工讀,無,無,晚,晚,晚,全,全
+何佳蓉,工讀,全,全,無,無,全,全,無`;
+  document.getElementById('csv-employees').value = demo;
+  importEmployees();
+}
+</script>
+</body>
+</html>
