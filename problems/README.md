@@ -32,7 +32,7 @@
 | [#11](../../issues/11) | AI 報價助手 — 製造業接單報價加速器 | 🏭 製造 | ⭐⭐ | 🏃 Sprint | 🟢 Open | |
 | [#12](../../issues/12) | 老師傅知識庫 — 工廠 know-how 數位傳承 | 🏭 製造 | ⭐⭐ | 🏃 Sprint | 🔵 解法已提交 | [Demo](https://ai-cooperation.github.io/solve-tw/demo/012/) |
 | [#13](../../issues/13) | 一人小編 AI 助手 — 社群行銷自動化 | 🛒 服務 | ⭐ | ⚡ Quick Fix | 🔵 解法已提交 | [Demo](https://ai-cooperation.github.io/solve-tw/demo/013/) |
-| [#14](../../issues/14) | 餐飲/零售 AI 智能排班系統 | 🛒 服務 | ⭐⭐ | 🏃 Sprint | 🟢 Open | |
+| [#14](../../issues/14) | 餐飲/零售 AI 智能排班系統 | 🛒 服務 | ⭐⭐ | 🏃 Sprint | 🔵 解法已提交 | [Demo](https://ai-cooperation.github.io/solve-tw/demo/014/) |
 | [#15](../../issues/15) | 進銷存異常偵測 — 庫存 AI 警報 | 🛒 服務 | ⭐⭐ | 🏃 Sprint | 🟢 Open | |
 | [#16](../../issues/16) | 合約到期提醒與條款摘要工具 | 🔧 通用 | ⭐ | ⚡ Quick Fix | 🟢 Open | |
 | [#17](../../issues/17) | 外銷多語信件 AI 翻譯與回覆 | 🏭 製造 | ⭐ | ⚡ Quick Fix | 🟢 Open | |
