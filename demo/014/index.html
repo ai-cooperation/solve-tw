@@ -95,6 +95,7 @@ details summary { cursor: pointer; font-weight: bold; padding: 8px 0; }
   <div class="tab" data-tab="schedule"><span class="tab-icon">📅</span>排班</div>
   <div class="tab" data-tab="leave"><span class="tab-icon">🔄</span>請假換班</div>
   <div class="tab" data-tab="fairness"><span class="tab-icon">⚖️</span>公平性</div>
+  <div class="tab" data-tab="ai"><span class="tab-icon">🤖</span>AI 助手</div>
 </div>
 
 <div class="content">
@@ -179,6 +180,31 @@ details summary { cursor: pointer; font-weight: bold; padding: 8px 0; }
 <div class="panel" id="panel-fairness">
   <div class="section-title">班次分配公平性</div>
   <div id="fairness-output"></div>
+</div>
+
+<!-- ===== AI 助手 ===== -->
+<div class="panel" id="panel-ai">
+  <div class="section-title">AI 排班助手</div>
+  <p class="hint" style="margin-bottom:12px;">用自然語言跟排班系統對話。規則引擎排班，AI 負責理解你的需求和解釋結果。</p>
+
+  <details>
+    <summary>⚙️ API Key 設定</summary>
+    <select id="ai-provider" style="margin-top:8px;">
+      <option value="gemini">Google Gemini（免費）</option>
+      <option value="openai">OpenAI</option>
+    </select>
+    <input type="password" id="api-key" placeholder="API Key" style="margin-top:8px;">
+    <div class="hint" style="color:#1e8449">🔒 關頁面即清除</div>
+    <button class="btn btn-secondary btn-sm" onclick="testKey()">測試連線</button>
+    <div id="key-status"></div>
+  </details>
+
+  <div style="margin-top:16px;">
+    <textarea id="ai-input" rows="3" placeholder="用講的就好，例如：&#10;• 下週小明週三不能來，幫我重排&#10;• 為什麼李美玲排不上週六早班？&#10;• 根據上個月營收，週六需要幾個人？" style="font-size:15px; font-family:inherit;"></textarea>
+    <button class="btn btn-primary" onclick="aiChat()">🤖 送出</button>
+  </div>
+
+  <div id="ai-history" style="margin-top:16px;"></div>
 </div>
 
 </div>
@@ -499,6 +525,113 @@ function loadDemoEmployees() {
 何佳蓉,工讀,全,全,無,無,全,全,無`;
   document.getElementById('csv-employees').value = demo;
   importEmployees();
+}
+
+// ===== AI Call =====
+async function callAI(prompt) {
+  const key = sessionStorage.getItem('sched_api-key');
+  const provider = sessionStorage.getItem('sched_ai-provider') || 'gemini';
+  if (!key) throw new Error('請先到 AI 助手 Tab 填 API Key');
+  if (provider === 'gemini') {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${key}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    const body = await r.text();
+    if (r.ok) { const d = JSON.parse(body); return d.candidates?.[0]?.content?.parts?.[0]?.text || ''; }
+    let msg = 'HTTP ' + r.status; try { msg = JSON.parse(body).error?.message || msg; } catch(_) {} throw new Error(msg);
+  } else {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: prompt }], temperature: 0.3 })
+    });
+    if (!r.ok) throw new Error('API ' + r.status);
+    return (await r.json()).choices?.[0]?.message?.content || '';
+  }
+}
+
+function testKey() {
+  const key = document.getElementById('api-key').value.trim();
+  const provider = document.getElementById('ai-provider').value;
+  const el = document.getElementById('key-status');
+  if (!key) { el.innerHTML = '<div class="status status-warn">請填 API Key</div>'; return; }
+  el.innerHTML = '<div class="loading">測試中</div>';
+  (provider === 'gemini'
+    ? fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`)
+    : fetch('https://api.openai.com/v1/models', { headers: { 'Authorization': 'Bearer ' + key } })
+  ).then(r => {
+    if (r.ok) { sessionStorage.setItem('sched_api-key', key); sessionStorage.setItem('sched_ai-provider', provider); el.innerHTML = '<div class="status status-ok">✅ 連線成功</div>'; }
+    else el.innerHTML = '<div class="status status-err">❌ Key 無效</div>';
+  }).catch(e => el.innerHTML = '<div class="status status-err">❌ ' + e.message + '</div>');
+}
+
+// ===== AI Chat =====
+let aiHistory = [];
+
+async function aiChat() {
+  const input = document.getElementById('ai-input').value.trim();
+  if (!input) return;
+  const el = document.getElementById('ai-history');
+
+  // Build context: current employees + schedule
+  const emps = getEmps();
+  const sched = getSched();
+
+  const empSummary = emps.map(e =>
+    `${e.name}(${e.type}) 可用：${e.avail.map((a, i) => `週${DAYS[i]}=${a.length ? a.join('/') : '無'}`).join(', ')}`
+  ).join('\n');
+
+  const schedSummary = sched.length
+    ? sched.map(r => `${r.name}: ${r.shifts.map((s, i) => `${DAYS[i]}=${s}`).join(', ')} (${r.hours}h, 假日${r.holidayShifts}次)`).join('\n')
+    : '（尚未排班）';
+
+  const laborLaw = `台灣勞基法：日工時≤8h、週工時≤40h、每7天至少1例假+1休息日、連續工作≤6天`;
+
+  aiHistory.push({ role: 'user', text: input });
+  renderAiHistory();
+  document.getElementById('ai-input').value = '';
+
+  const prompt = `你是台灣餐飲/零售業的排班助手。用口語繁體中文回答，直接講重點。
+
+系統資訊：
+門市：${document.getElementById('store-name').value}
+排班週：${document.getElementById('week-start').value}
+班別：早班${document.getElementById('shift-m-start').value}-${document.getElementById('shift-m-end').value}(需${document.getElementById('shift-m-need').value}人) 午班${document.getElementById('shift-a-start').value}-${document.getElementById('shift-a-end').value}(需${document.getElementById('shift-a-need').value}人) 晚班${document.getElementById('shift-e-start').value}-${document.getElementById('shift-e-end').value}(需${document.getElementById('shift-e-need').value}人)
+假日人力×1.5
+${laborLaw}
+
+員工（${emps.length}人）：
+${empSummary}
+
+目前排班結果：
+${schedSummary}
+
+使用者問：「${input}」
+
+回答規則：
+1. 如果是排班調整需求（某人請假、換班），分析可行性，列出具體建議和影響
+2. 如果是問「為什麼」，用約束條件解釋原因（工時上限、可用時段、公平性）
+3. 如果是人力預測，根據常識給建議（假日×1.5、尖峰時段+1人）
+4. 不要用 markdown，直接講
+5. 不要說「你好」，直接回答`;
+
+  try {
+    const result = await callAI(prompt);
+    aiHistory.push({ role: 'ai', text: result });
+    renderAiHistory();
+  } catch(e) {
+    aiHistory.push({ role: 'ai', text: '❌ ' + e.message });
+    renderAiHistory();
+  }
+}
+
+function renderAiHistory() {
+  const el = document.getElementById('ai-history');
+  el.innerHTML = aiHistory.map(m => {
+    if (m.role === 'user') return `<div style="background:#dfe6e9; padding:10px 14px; border-radius:12px 12px 2px 12px; margin:8px 0; margin-left:40px; font-size:15px;">💬 ${m.text}</div>`;
+    return `<div style="background:#fff; padding:12px 14px; border-radius:12px 12px 12px 2px; margin:8px 0; margin-right:40px; font-size:15px; border:1px solid #dfe6e9; line-height:1.7;">🤖 ${m.text.replace(/\n/g, '<br>')}</div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
 }
 </script>
 </body>
